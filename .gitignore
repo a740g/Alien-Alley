@@ -1,14 +1,31 @@
-# Ignore all
 *
-# Unignore all with extensions
 !*.*
-# Unignore all dirs
 !*/
-# Unignore include
-!include
-# Ignore all exe files
+!Makefile
+*.o
+*.a
+*.lib
+*.dll
+*.so
+*.dylib
+*.obj
+*.exp
+*.ilk
+*.pdb
 *.exe
-# Ignore highscore file
-highscore.csv
-#macOS files
+*.com
+*.bin
+*.log
+.vs/
+.vscode/
+.fake/
+.devin/
+.idea/
+.cache/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.lnk
+*.dSYM
 *.command
+highscore.csv

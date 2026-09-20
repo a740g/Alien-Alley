@@ -109,12 +109,12 @@ AIR Design - Kevin Long
 3354 N.E. 83rd Ave  
 Portland, OR 97220 USA  
 Voice Mail: 800-223-3737x594  
-Email: air@netcom.com  
+Email: <air@netcom.com>  
 
 J. Black  
 PO Box 11740  
 Denver, CO 80211-0740 USA  
-Email: jblack@csn.org  
+Email: <jblack@csn.org>  
 
 Dave Roberts may be reached at The Coriolis Group.
 

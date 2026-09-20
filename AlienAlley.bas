@@ -6,44 +6,35 @@
 '  /_/   \_\_|_|\___|_| |_| /_/   \_\_|_|\___|\__, |
 '                                             |___/
 '
-'  Source port copyright (c) 2023 Samuel Gomes
+'  QB64-PE Source Port
+'  Copyright (c) 2026 Samuel Gomes
 '
 '-----------------------------------------------------------------------------------------------------------------------
 
-'-----------------------------------------------------------------------------------------------------------------------
-' HEADER FILES
-'-----------------------------------------------------------------------------------------------------------------------
-$LET TOOLBOX64_STRICT = TRUE
-'$INCLUDE:'include/Core/TimeOps.bi'
-'$INCLUDE:'include/Math/Math.bi'
-'$INCLUDE:'include/Math/Vector2f.bi'
-'$INCLUDE:'include/String/StringOps.bi'
-'$INCLUDE:'include/Graphics/Graphics2D.bi'
-'$INCLUDE:'include/IO/InputManager.bi'
-'-----------------------------------------------------------------------------------------------------------------------
+$IF VERSION < 4.7 THEN
+    $ERROR 'This requires the latest version of QB64-PE from https://github.com/QB64-Phoenix-Edition/QB64pe/releases/latest'
+$END IF
 
-'-----------------------------------------------------------------------------------------------------------------------
-' METACOMMANDS
-'-----------------------------------------------------------------------------------------------------------------------
+$UNSTABLE:TYPEFIELDS
+'$STATIC
+_DEFINE A-Z AS LONG
+OPTION _EXPLICIT
+$COLOR:32
 $ASSERTS
 $EXEICON:'./AlienAlley.ico'
 $VERSIONINFO:ProductName='Alien Alley'
 $VERSIONINFO:CompanyName='Samuel Gomes'
-$VERSIONINFO:LegalCopyright='Copyright (c) 2023 Samuel Gomes'
+$VERSIONINFO:LegalCopyright='Copyright (c) 2026 Samuel Gomes'
 $VERSIONINFO:LegalTrademarks='All trademarks are property of their respective owners'
 $VERSIONINFO:Web='https://github.com/a740g'
 $VERSIONINFO:Comments='https://github.com/a740g'
 $VERSIONINFO:InternalName='AlienAlley'
 $VERSIONINFO:OriginalFilename='AlienAlley.exe'
 $VERSIONINFO:FileDescription='Alien Alley executable'
-$VERSIONINFO:FILEVERSION#=2,4,1,0
-$VERSIONINFO:PRODUCTVERSION#=2,4,1,0
+$VERSIONINFO:FILEVERSION#=2,5,0,0
+$VERSIONINFO:PRODUCTVERSION#=2,5,0,0
 $RESIZE:SMOOTH
-'-----------------------------------------------------------------------------------------------------------------------
 
-'-----------------------------------------------------------------------------------------------------------------------
-' CONSTANTS
-'-----------------------------------------------------------------------------------------------------------------------
 ' Game constants
 CONST APP_NAME = "Alien Alley"
 CONST MAX_ALIENS = 4
@@ -97,20 +88,40 @@ CONST REDUCED_SCREEN_HEIGHT = SCREEN_HEIGHT - STATUS_HEIGHT
 ' Scrolling parameters
 CONST MAP_SCROLL_STEP_NORMAL = 1
 CONST MAP_SCROLL_STEP_FAST = 2
-'-----------------------------------------------------------------------------------------------------------------------
+' Key constants
+CONST KEY_SPACE& = _ASC_SPACE
+CONST KEY_UPPER_A& = 65
+CONST KEY_UPPER_D& = 68
+CONST KEY_UPPER_J& = 74
+CONST KEY_UPPER_K& = 75
+CONST KEY_UPPER_M& = 77
+CONST KEY_UPPER_Q& = 81
+CONST KEY_UPPER_S& = 83
+CONST KEY_UPPER_W& = 87
+CONST KEY_LOWER_A& = 97
+CONST KEY_LOWER_D& = 100
+CONST KEY_LOWER_J& = 106
+CONST KEY_LOWER_K& = 107
+CONST KEY_LOWER_M& = 109
+CONST KEY_LOWER_Q& = 113
+CONST KEY_LOWER_S& = 115
+CONST KEY_LOWER_W& = 119
+CONST KEY_TILDE& = _ASC_TILDE
 
-'-----------------------------------------------------------------------------------------------------------------------
-' USER DEFINED TYPES
-'-----------------------------------------------------------------------------------------------------------------------
-TYPE Rectangle2DType
+TYPE Vector2f
+    x AS SINGLE
+    y AS SINGLE
+END TYPE
+
+TYPE Rectangle
     a AS Vector2f
     b AS Vector2f
 END TYPE
 
-TYPE SpriteType
+TYPE Sprite
     isActive AS _BYTE ' is this sprite active / in use?
     size AS Vector2f ' size of the sprite
-    boundary AS Rectangle2DType ' sprite should not leave this area
+    boundary AS Rectangle ' sprite should not leave this area
     position AS Vector2f ' (left, top) position of the sprite on the 2D plane
     velocity AS Vector2f ' velocity of the sprite
     bDraw AS _BYTE ' do we need to draw the sprite?
@@ -118,24 +129,20 @@ TYPE SpriteType
     objSpec2 AS LONG ' special data 2
 END TYPE
 
-TYPE HighScoreType
+TYPE HighScore
     text AS STRING
     score AS LONG
 END TYPE
-'-----------------------------------------------------------------------------------------------------------------------
 
-'-----------------------------------------------------------------------------------------------------------------------
-' GLOBAL VARIABLES
-'-----------------------------------------------------------------------------------------------------------------------
 DIM SHARED Score AS LONG
 DIM SHARED HeroShields AS INTEGER
-DIM SHARED HighScore(0 TO NUM_HIGH_SCORES - 1) AS HighScoreType
+DIM SHARED HighScore(0 TO NUM_HIGH_SCORES - 1) AS HighScore
 DIM SHARED MapScrollStep AS INTEGER ' # of pixels to scroll the background
-DIM SHARED Hero AS SpriteType
-DIM SHARED Alien(0 TO MAX_ALIENS - 1) AS SpriteType
-DIM SHARED HeroMissile(0 TO MAX_HERO_MISSILES - 1) AS SpriteType
-DIM SHARED AlienMissile(0 TO MAX_ALIEN_MISSILES - 1) AS SpriteType
-DIM SHARED Explosion(0 TO MAX_EXPLOSIONS - 1) AS SpriteType
+DIM SHARED Hero AS Sprite
+DIM SHARED Alien(0 TO MAX_ALIENS - 1) AS Sprite
+DIM SHARED HeroMissile(0 TO MAX_HERO_MISSILES - 1) AS Sprite
+DIM SHARED AlienMissile(0 TO MAX_ALIEN_MISSILES - 1) AS Sprite
+DIM SHARED Explosion(0 TO MAX_EXPLOSIONS - 1) AS Sprite
 DIM SHARED HUDSize AS Vector2f
 DIM SHARED HUDDigitSize AS Vector2f
 DIM SHARED AlienGenCounter AS INTEGER
@@ -159,89 +166,19 @@ REDIM SHARED TileMapY(0 TO 0) AS LONG ' the y postion of the tile row
 DIM SHARED TileMapSize AS Vector2f
 DIM SHARED ShowFPS AS _BYTE
 DIM SHARED NoLimit AS _BYTE
-'-----------------------------------------------------------------------------------------------------------------------
-
-'-----------------------------------------------------------------------------------------------------------------------
-' PROGRAM ENTRY POINT - Main program loop. Inits the program, draws intro screens and title pages,
-' and waits for user to hit keystroke to indicated what they want to do
-'-----------------------------------------------------------------------------------------------------------------------
-DIM DrawTitle AS _BYTE
-DIM k AS _UNSIGNED LONG
-
-' We want the title page to show the first time
-DrawTitle = _TRUE
-' Initialize everything we need
-InitializeProgram
-' Display the into credits screen
-DisplayIntroCredits
-' Clear keyboard and mouse
-ClearInput
-
-' Main menu loop
-DO
-    ' Draw title page (only if required)
-    IF DrawTitle THEN
-        DisplayTitlePage
-        DrawTitle = _FALSE
-    END IF
-
-    ' Get a key from the user
-    k = _KEYHIT
-
-    ' Check what key was press and action it
-    SELECT CASE k
-        CASE _KEY_ESC, KEY_LOWER_Q, KEY_UPPER_Q
-            EXIT DO
-
-        CASE KEY_LOWER_K, KEY_UPPER_K, KEY_LOWER_M, KEY_UPPER_M, KEY_LOWER_J, KEY_UPPER_J, _KEY_ENTER
-            RunGame
-            NewHighScore Score
-            ClearInput
-            DrawTitle = _TRUE
-
-        CASE KEY_LOWER_S, KEY_UPPER_S
-            DisplayHighScoresScreen
-            ClearInput
-            DrawTitle = _TRUE
-
-        CASE _KEY_F1
-            ShowFPS = NOT ShowFPS
-
-        CASE _KEY_F7
-            NoLimit = NOT NoLimit
-
-        CASE ELSE
-            DrawTitle = _FALSE
-    END SELECT
-LOOP
-
-' Fade out
-Graphics_FadeScreen _FALSE, UPDATES_PER_SECOND * 2, 100
-
-' Release all resources
-FinalizeProgram
-
-SYSTEM
-'-----------------------------------------------------------------------------------------------------------------------
-
-'-----------------------------------------------------------------------------------------------------------------------
-' FUNCTIONS & SUBROUTINES
-'-----------------------------------------------------------------------------------------------------------------------
 
 ' Calculates the bounding rectangle for a sprite given its position & size
-SUB GetRectangle (position AS Vector2f, size AS Vector2f, r AS Rectangle2DType)
+SUB GetRectangle (position AS Vector2f, size AS Vector2f, r AS Rectangle)
     r.a.x = position.x
     r.a.y = position.y
     r.b.x = position.x + size.x - 1
     r.b.y = position.y + size.y - 1
 END SUB
 
-
 ' Collision testing routine. This is a simple bounding box collision test
-FUNCTION RectanglesCollide%% (r1 AS Rectangle2DType, r2 AS Rectangle2DType)
+FUNCTION RectanglesCollide%% (r1 AS Rectangle, r2 AS Rectangle)
     RectanglesCollide = NOT (r1.a.x > r2.b.x _ORELSE r2.a.x > r1.b.x _ORELSE r1.a.y > r2.b.y _ORELSE r2.a.y > r1.b.y)
 END FUNCTION
-
 
 ' Chear mouse and keyboard events
 SUB ClearInput
@@ -250,36 +187,96 @@ SUB ClearInput
     _KEYCLEAR
 END SUB
 
+' Fades the current _DEST to the screen to / from black
+' img - image to use. can be the screen or _DEST
+' isIn - True or False. True is fade in, False is fade out
+' fps& - speed (updates / second)
+' stopPercent - %age when to bail out (use for partial fades)
+SUB FadeScreen (isIn AS _BYTE, maxFPS AS _UNSIGNED INTEGER, stopPercent AS _BYTE)
+    DIM AS LONG dspImg, tmpImg
+
+    dspImg = _DISPLAY ' Get the image handle of the screen being displayed
+
+    ' We'll draw a filled rectangle over the screen with varying aplha values
+    ' Make a copy of the destination image
+    tmpImg = _COPYIMAGE(_DEST)
+
+    DIM maxX AS LONG: maxX = _WIDTH(tmpImg) - 1
+    DIM maxY AS LONG: maxY = _HEIGHT(tmpImg) - 1
+
+    DIM i AS LONG
+    FOR i = 0 TO 255
+        IF stopPercent < (i * 100) \ 255 THEN EXIT FOR ' bail if < 100% we hit the limit
+
+        ' Stretch and blit the image to the screen
+        _PUTIMAGE , tmpImg, _DISPLAY
+
+        IF isIn THEN
+            LINE (0, 0)-(maxX, maxY), _RGBA32(0, 0, 0, 255 - i), BF
+        ELSE
+            LINE (0, 0)-(maxX, maxY), _RGBA32(0, 0, 0, i), BF
+        END IF
+
+        _DISPLAY
+
+        IF maxFPS > 0 THEN _LIMIT maxFPS
+    NEXT i
+
+    _FREEIMAGE tmpImg
+END SUB
+
+' Loads an image and returns and image handle
+' fileName - filename or memory buffer of the image
+' isHardware - image will be loaded as a hardware image (is8bpp must not be true for this to work)
+' otherOptions - other image loading options like "memory", "adaptive" and the various image scalers
+' transparentColor - if this is >= 0 then the color specified by this becomes the transparency color key
+FUNCTION LoadImage& (fileName AS STRING, isHardware AS _BYTE, otherOptions AS STRING, transparentColor AS _INTEGER64)
+    DIM handle AS LONG
+
+    handle = _LOADIMAGE(fileName, 32, otherOptions)
+
+    IF handle < -1 THEN
+        IF transparentColor >= 0 THEN _CLEARCOLOR transparentColor, handle
+
+        IF isHardware THEN
+            DIM handleHW AS LONG: handleHW = _COPYIMAGE(handle, 33)
+            _FREEIMAGE handle
+            handle = handleHW
+        END IF
+    END IF
+
+    LoadImage = handle
+END FUNCTION
 
 ' Loads the hero, alien, and missile sprites and initializes the sprite structures
 SUB InitializeSprites
     DIM i AS INTEGER
 
     ' Load hero spaceship
-    HeroBitmap(0) = Graphics_LoadImage("dat/gfx/hero0.pcx", _FALSE, _TRUE, _STR_EMPTY, BGRA_BLACK)
+    HeroBitmap(0) = LoadImage("dat/gfx/hero0.pcx", _TRUE, _STR_EMPTY, Black)
     _ASSERT HeroBitmap(0) < -1
-    HeroBitmap(1) = Graphics_LoadImage("dat/gfx/hero1.pcx", _FALSE, _TRUE, _STR_EMPTY, BGRA_BLACK)
+    HeroBitmap(1) = LoadImage("dat/gfx/hero1.pcx", _TRUE, _STR_EMPTY, Black)
     _ASSERT HeroBitmap(1) < -1
 
     ' Load alien spaceship
-    AlienBitmap(0) = Graphics_LoadImage("dat/gfx/alien0.pcx", _FALSE, _TRUE, _STR_EMPTY, BGRA_BLACK)
+    AlienBitmap(0) = LoadImage("dat/gfx/alien0.pcx", _TRUE, _STR_EMPTY, Black)
     _ASSERT AlienBitmap(0) < -1
-    AlienBitmap(1) = Graphics_LoadImage("dat/gfx/alien1.pcx", _FALSE, _TRUE, _STR_EMPTY, BGRA_BLACK)
+    AlienBitmap(1) = LoadImage("dat/gfx/alien1.pcx", _TRUE, _STR_EMPTY, Black)
     _ASSERT AlienBitmap(1) < -1
 
     ' Load missile
-    MissileBitmap = Graphics_LoadImage("dat/gfx/missile.pcx", _FALSE, _TRUE, _STR_EMPTY, BGRA_BLACK)
+    MissileBitmap = LoadImage("dat/gfx/missile.pcx", _TRUE, _STR_EMPTY, Black)
     _ASSERT MissileBitmap < -1
 
     ' Load missile trails
-    MissileTrailUpBitmap = Graphics_LoadImage("dat/gfx/missiletrailup.pcx", _FALSE, _TRUE, _STR_EMPTY, BGRA_BLACK)
+    MissileTrailUpBitmap = LoadImage("dat/gfx/missiletrailup.pcx", _TRUE, _STR_EMPTY, Black)
     _ASSERT MissileTrailUpBitmap < -1
-    MissileTrailDnBitmap = Graphics_LoadImage("dat/gfx/missiletraildn.pcx", _FALSE, _TRUE, _STR_EMPTY, BGRA_BLACK)
+    MissileTrailDnBitmap = LoadImage("dat/gfx/missiletraildn.pcx", _TRUE, _STR_EMPTY, Black)
     _ASSERT MissileTrailDnBitmap < -1
 
     ' Load explosion bitmaps
     FOR i = 0 TO MAX_EXPLOSION_BITMAPS - 1
-        ExplosionBitmap(i) = Graphics_LoadImage("dat/gfx/explosion" + LTRIM$(STR$(i)) + ".pcx", _FALSE, _TRUE, _STR_EMPTY, BGRA_BLACK)
+        ExplosionBitmap(i) = LoadImage("dat/gfx/explosion" + LTRIM$(STR$(i)) + ".pcx", _TRUE, _STR_EMPTY, Black)
         _ASSERT ExplosionBitmap(i) < -1
     NEXT
 
@@ -340,7 +337,6 @@ SUB InitializeSprites
     GunBlinkState = 1
 END SUB
 
-
 ' Frees the memory occupied by the sprites
 SUB FinalizeSprites
     DIM i AS INTEGER
@@ -357,7 +353,6 @@ SUB FinalizeSprites
     _FREEIMAGE HeroBitmap(0)
     _FREEIMAGE HeroBitmap(1)
 END SUB
-
 
 ' Updates the "UserInput..." variables used by the MoveSprites routine from supported input devices
 ' Return _TRUE if ESC was pressed
@@ -383,7 +378,6 @@ FUNCTION GetInput%% (UserInputUp AS _BYTE, UserInputDown AS _BYTE, UserInputLeft
     GetInput = _KEYDOWN(_KEY_ESC)
 END FUNCTION
 
-
 ' Finds a non-active hero missile in the HeroMissile array and initializes it
 ' Return _TRUE if it was successful
 FUNCTION CreateHeroMissile%% (x AS INTEGER, y AS INTEGER)
@@ -405,7 +399,6 @@ FUNCTION CreateHeroMissile%% (x AS INTEGER, y AS INTEGER)
     CreateHeroMissile = _FALSE
 END FUNCTION
 
-
 ' Finds a free alien in the Alien array and initializes it
 SUB CreateAlien
     DIM i AS INTEGER
@@ -425,7 +418,6 @@ SUB CreateAlien
     NEXT
 END SUB
 
-
 ' Finds a free alien missile in the AlienMissile array and initializes it.
 ' The x and y positions of the missile are set from the x and y parameters which will place them somewhere near an alien gun.
 SUB CreateAlienMissile (x AS INTEGER, y AS INTEGER)
@@ -444,7 +436,6 @@ SUB CreateAlienMissile (x AS INTEGER, y AS INTEGER)
     NEXT
 END SUB
 
-
 ' Starts an explosion occuring at the appropriate x and y coordinates.
 SUB CreateExplosion (position AS Vector2f)
     DIM i AS INTEGER
@@ -461,15 +452,43 @@ SUB CreateExplosion (position AS Vector2f)
     NEXT
 END SUB
 
+' @brief Get the digit at position p in an integer
+' @param n The number to extract the digit from
+' @param p The digit position, where 0 = units, 1 = tens, 2 = hundreds, and so on
+' @return The digit at the specified position
+FUNCTION GetDigit& (n AS _UNSIGNED LONG, p AS _UNSIGNED LONG)
+    SELECT CASE p
+        CASE 1
+            n = n \ 10
+        CASE 2
+            n = n \ 100
+        CASE 3
+            n = n \ 1000
+        CASE 4
+            n = n \ 10000
+        CASE 5
+            n = n \ 100000
+        CASE 6
+            n = n \ 1000000
+        CASE 7
+            n = n \ 10000000
+        CASE 8
+            n = n \ 100000000
+        CASE 9
+            n = n \ 1000000000
+    END SELECT
+
+    GetDigit = n MOD 10
+END FUNCTION
 
 ' Loads HUD bitmaps and initialize the HUD
 SUB InitializeHUD
     DIM i AS INTEGER
 
     ' Load the HUD bitmap
-    HUDBitmap(0) = Graphics_LoadImage("dat/gfx/hud0.pcx", _FALSE, _TRUE, "HQ2XA", -1)
+    HUDBitmap(0) = LoadImage("dat/gfx/hud0.pcx", _TRUE, "HQ2XA", -1)
     _ASSERT HUDBitmap(0) < -1
-    HUDBitmap(1) = Graphics_LoadImage("dat/gfx/hud1.pcx", _FALSE, _TRUE, "HQ2XA", -1)
+    HUDBitmap(1) = LoadImage("dat/gfx/hud1.pcx", _TRUE, "HQ2XA", -1)
     _ASSERT HUDBitmap(1) < -1
 
     HUDSize.x = _WIDTH(HUDBitmap(0))
@@ -477,13 +496,12 @@ SUB InitializeHUD
 
     ' Load the digit bitmaps
     FOR i = 0 TO 9
-        HUDDigitBitmap(i) = Graphics_LoadImage("dat/gfx/" + LTRIM$(STR$(i)) + ".pcx", _FALSE, _TRUE, "HQ2XA", -1)
+        HUDDigitBitmap(i) = LoadImage("dat/gfx/" + LTRIM$(STR$(i)) + ".pcx", _TRUE, "HQ2XA", -1)
         _ASSERT HUDDigitBitmap(i) < -1
     NEXT
     HUDDigitSize.x = _WIDTH(HUDDigitBitmap(0))
     HUDDigitSize.y = _HEIGHT(HUDDigitBitmap(0))
 END SUB
-
 
 ' Destroys the HUD
 SUB FinalizeHUD
@@ -497,16 +515,15 @@ SUB FinalizeHUD
     _FREEIMAGE HUDBitmap(1)
 END SUB
 
-
 ' Draws the status area at the bottom of the screen showing the player's current score and shield strength
 SUB DrawHUD
     ' First draw the HUD panel onto the frame buffer
     _PUTIMAGE (0, SCREEN_HEIGHT - HUDSize.y), HUDBitmap(GunBlinkState)
 
     ' Update the shield status
-    Graphics_DrawFilledRectangle SHIELD_STATUS_LEFT, SHIELD_STATUS_TOP, SHIELD_STATUS_RIGHT, SHIELD_STATUS_BOTTOM, BGRA_RED
+    LINE (SHIELD_STATUS_LEFT, SHIELD_STATUS_TOP)-(SHIELD_STATUS_RIGHT, SHIELD_STATUS_BOTTOM), Red, BF
     IF HeroShields > 0 THEN
-        Graphics_DrawFilledRectangle SHIELD_STATUS_LEFT, SHIELD_STATUS_TOP, SHIELD_STATUS_LEFT + HeroShields, SHIELD_STATUS_BOTTOM, BGRA_LIME
+        LINE (SHIELD_STATUS_LEFT, SHIELD_STATUS_TOP)-(SHIELD_STATUS_LEFT + HeroShields, SHIELD_STATUS_BOTTOM), Lime, BF
     END IF
 
     DIM j AS LONG: j = SCORE_NUMBERS_LEFT
@@ -514,23 +531,23 @@ SUB DrawHUD
     DIM h AS LONG: h = HUDDigitSize.y
 
     ' Render the score
-    DIM i AS LONG: FOR i = 5 TO 0 STEP -1
-        _PUTIMAGE (j, SCORE_NUMBERS_TOP)-(j + w - 1, SCORE_NUMBERS_TOP + h), HUDDigitBitmap(Math_GetDigitFromLong(Score, i))
+    DIM i AS LONG
+    FOR i = 5 TO 0 STEP -1
+        _PUTIMAGE (j, SCORE_NUMBERS_TOP)-(j + w - 1, SCORE_NUMBERS_TOP + h), HUDDigitBitmap(GetDigit(Score, i))
         j = j + w
     NEXT i
 END SUB
-
 
 ' Initialize the map with random tiles
 SUB InitializeMap
     DIM AS LONG x, y, c
 
     ' Load the background tiles
-    TileBitmap(0) = Graphics_LoadImage("dat/gfx/stars1.pcx", _FALSE, _TRUE, _STR_EMPTY, -1)
+    TileBitmap(0) = LoadImage("dat/gfx/stars1.pcx", _TRUE, _STR_EMPTY, -1)
     _ASSERT TileBitmap(0) < -1
-    TileBitmap(1) = Graphics_LoadImage("dat/gfx/stars2.pcx", _FALSE, _TRUE, _STR_EMPTY, -1)
+    TileBitmap(1) = LoadImage("dat/gfx/stars2.pcx", _TRUE, _STR_EMPTY, -1)
     _ASSERT TileBitmap(1) < -1
-    TileBitmap(2) = Graphics_LoadImage("dat/gfx/earth.pcx", _FALSE, _TRUE, _STR_EMPTY, -1)
+    TileBitmap(2) = LoadImage("dat/gfx/earth.pcx", _TRUE, _STR_EMPTY, -1)
     _ASSERT TileBitmap(2) < -1
 
     TileMapSize.x = SCREEN_WIDTH \ _WIDTH(TileBitmap(0))
@@ -560,7 +577,6 @@ SUB InitializeMap
     NEXT
 END SUB
 
-
 ' Destroys the background tile map stuff
 SUB FinalizeMap
     DIM i AS LONG
@@ -569,7 +585,6 @@ SUB FinalizeMap
         _FREEIMAGE TileBitmap(i)
     NEXT
 END SUB
-
 
 ' Scrolls the background using the backgound tiles
 SUB UpdateMap
@@ -608,7 +623,6 @@ SUB UpdateMap
     END IF
 END SUB
 
-
 ' Draws the tile map to the frame buffer
 SUB DrawMap
     DIM AS LONG x, y
@@ -619,7 +633,6 @@ SUB DrawMap
         NEXT
     NEXT
 END SUB
-
 
 ' Loads and plays a MIDI file (loops it too)
 SUB PlayMIDIFile (fileName AS STRING)
@@ -641,7 +654,6 @@ SUB PlayMIDIFile (fileName AS STRING)
     END IF
 END SUB
 
-
 ' Initialize sound stuff
 SUB InitializeSound
     ' Load the sound effects
@@ -651,7 +663,6 @@ SUB InitializeSound
     _ASSERT LaserSound > 0
 END SUB
 
-
 ' Close all sound related stuff and frees resources
 SUB FinalizeSound
     _SNDCLOSE ExplosionSound
@@ -660,6 +671,22 @@ SUB FinalizeSound
     PlayMIDIFile _STR_EMPTY ' This is will unload whatever MIDI data is there in memory
 END SUB
 
+FUNCTION GetFPS~&
+    STATIC AS _UNSIGNED LONG counter, finalFPS
+    STATIC lastTime AS DOUBLE
+
+    DIM currentTime AS DOUBLE: currentTime = _UPTIME
+
+    IF currentTime >= lastTime + 1# THEN
+        lastTime = currentTime
+        finalFPS = counter
+        counter = 0
+    END IF
+
+    counter = counter + 1
+
+    GetFPS = finalFPS
+END FUNCTION
 
 ' Centers a string on the screen
 ' The function calculates the correct starting column position to center the string on the screen and then draws the actual text
@@ -668,17 +695,15 @@ SUB DrawStringCenter (s AS STRING, y AS LONG, c AS _UNSIGNED LONG)
     _PRINTSTRING ((SCREEN_WIDTH \ 2) - (_PRINTWIDTH(s) \ 2), y), s
 END SUB
 
-
 ' Displays the HighScore array on the screen.
 SUB DrawHighScores
     DIM AS INTEGER i
 
-    DrawStringCenter "####===-- HIGH SCORES --===####", 32, BGRA_LEMONYELLOW
+    DrawStringCenter "####===-- HIGH SCORES --===####", 32, LemonYellow
     FOR i = 0 TO NUM_HIGH_SCORES - 1
-        DrawStringCenter RIGHT$(" " + STR$(i + 1), 2) + ". " + LEFT$(HighScore(i).text + SPACE$(HIGH_SCORE_TEXT_LEN), HIGH_SCORE_TEXT_LEN) + "  " + RIGHT$(SPACE$(4) + STR$(HighScore(i).score), 5), 64 + i * 32, BGRA_SKYBLUE
+        DrawStringCenter RIGHT$(" " + STR$(i + 1), 2) + ". " + LEFT$(HighScore(i).text + SPACE$(HIGH_SCORE_TEXT_LEN), HIGH_SCORE_TEXT_LEN) + "  " + RIGHT$(SPACE$(4) + STR$(HighScore(i).score), 5), 64 + i * 32, SkyBlue
     NEXT
 END SUB
-
 
 ' Displays the high score screen from the title page
 SUB DisplayHighScoresScreen
@@ -692,7 +717,7 @@ SUB DisplayHighScoresScreen
         DrawMap
         DrawHighScores
 
-        IF ShowFPS THEN _PRINTSTRING (0, 0), STR$(Time_GetHertz) + " FPS"
+        IF ShowFPS THEN _PRINTSTRING (0, 0), STR$(GetFPS) + " FPS"
 
         _DISPLAY
 
@@ -701,9 +726,8 @@ SUB DisplayHighScoresScreen
         DO WHILE _MOUSEINPUT
             IF _MOUSEBUTTON(1) OR _MOUSEBUTTON(2) OR _MOUSEBUTTON(3) THEN EXIT DO
         LOOP
-    LOOP WHILE _KEYHIT <= NULL
+    LOOP WHILE _KEYHIT <= 0 ' <= 0 is used to ignore key up events
 END SUB
-
 
 ' Manipulates the HighScore array to make room for the users score and gets the new text
 SUB NewHighScore (NewScore AS LONG)
@@ -734,7 +758,7 @@ SUB NewHighScore (NewScore AS LONG)
 
     sPos = 0
     ClearInput
-    COLOR BGRA_DEEPSKYBLUE
+    COLOR DeepSkyBlue
 
     ' Get user text string
     DO
@@ -754,14 +778,13 @@ SUB NewHighScore (NewScore AS LONG)
             HighScore(i).text = LEFT$(HighScore(i).text, sPos)
         END IF
 
-        IF ShowFPS THEN _PRINTSTRING (0, 0), STR$(Time_GetHertz) + " FPS"
+        IF ShowFPS THEN _PRINTSTRING (0, 0), STR$(GetFPS) + " FPS"
 
         _DISPLAY
 
         IF NOT NoLimit THEN _LIMIT UPDATES_PER_SECOND
     LOOP WHILE k <> _KEY_ENTER
 END SUB
-
 
 ' Displays the Alien Alley title page
 SUB DisplayTitlePage
@@ -772,7 +795,7 @@ SUB DisplayTitlePage
     CLS , 0 ' black with no alpha
 
     ' First page of stuff
-    DIM tmp AS LONG: tmp = Graphics_LoadImage("dat/gfx/title.pcx", _FALSE, _FALSE, "HQ2XA", -1)
+    DIM tmp AS LONG: tmp = LoadImage("dat/gfx/title.pcx", _FALSE, "HQ2XA", -1)
     _ASSERT tmp < -1
 
     ' Stretch bmp to fill the screen
@@ -782,9 +805,8 @@ SUB DisplayTitlePage
     _FREEIMAGE tmp
 
     ' Fade in
-    Graphics_FadeScreen _TRUE, UPDATES_PER_SECOND * 2, 100
+    FadeScreen _TRUE, UPDATES_PER_SECOND * 2, 100
 END SUB
-
 
 ' Displays the introduction credits
 SUB DisplayIntroCredits
@@ -792,24 +814,23 @@ SUB DisplayIntroCredits
     CLS , 0 ' black with no alpha
 
     ' First page of stuff
-    DrawStringCenter "Coriolis Group Books", 192, BGRA_RED
-    DrawStringCenter "Presents", 208, BGRA_RED
+    DrawStringCenter "Coriolis Group Books", 192, Red
+    DrawStringCenter "Presents", 208, Red
 
-    Graphics_FadeScreen _TRUE, UPDATES_PER_SECOND * 2, 100 ' fade in
-    Graphics_FadeScreen _FALSE, UPDATES_PER_SECOND * 2, 100 ' fade out
+    FadeScreen _TRUE, UPDATES_PER_SECOND * 2, 100 ' fade in
+    FadeScreen _FALSE, UPDATES_PER_SECOND * 2, 100 ' fade out
 
     ' Clear the screen
     CLS , 0 ' black with no alpha
 
     ' Second page of stuff
-    DrawStringCenter "A", 176, BGRA_RED
-    DrawStringCenter "Dave Roberts", 192, BGRA_RED
-    DrawStringCenter "Production", 208, BGRA_RED
+    DrawStringCenter "A", 176, Red
+    DrawStringCenter "Dave Roberts", 192, Red
+    DrawStringCenter "Production", 208, Red
 
-    Graphics_FadeScreen _TRUE, UPDATES_PER_SECOND * 2, 100 ' fade in
-    Graphics_FadeScreen _FALSE, UPDATES_PER_SECOND * 2, 100 ' fade out
+    FadeScreen _TRUE, UPDATES_PER_SECOND * 2, 100 ' fade in
+    FadeScreen _FALSE, UPDATES_PER_SECOND * 2, 100 ' fade out
 END SUB
-
 
 ' Loads the high score file from disk
 ' If a high score file cannot be found or cannot be read, a default list of high-score entries is created
@@ -862,7 +883,6 @@ SUB LoadHighScores
     END IF
 END SUB
 
-
 ' Writes the HighScore array out to the high score file
 SUB SaveHighScores
     DIM i AS INTEGER
@@ -880,9 +900,8 @@ SUB SaveHighScores
     CLOSE hsFile
 END SUB
 
-
 ' This moves the sprite based on the velocity and if there is a boundary specified then keeps it confined
-SUB UpdateSprite (s AS SpriteType)
+SUB UpdateSprite (s AS Sprite)
     ' First move the sprite
     s.position.x = s.position.x + s.velocity.x
     s.position.y = s.position.y + s.velocity.y
@@ -897,7 +916,6 @@ SUB UpdateSprite (s AS SpriteType)
         IF s.position.y > s.boundary.b.y - s.size.y THEN s.position.y = s.boundary.b.y - s.size.y
     END IF
 END SUB
-
 
 ' Takes care of moving hero ship and alien sprites, based on user input and their behavioral algorithms
 ' MoveSprites is also where missiles are generated and off-screen images are removed from play
@@ -1014,7 +1032,6 @@ SUB MoveSprites (UserInputUp AS _BYTE, UserInputDown AS _BYTE, UserInputLeft AS 
     IF UserInputUp THEN MapScrollStep = MAP_SCROLL_STEP_FAST ELSE MapScrollStep = MAP_SCROLL_STEP_NORMAL
 END SUB
 
-
 ' Check for collisions between various objects and start explosions if they collide
 ' Collision detection is performed between:
 '   * aliens and hero
@@ -1023,7 +1040,7 @@ END SUB
 ' Note that all tests are performed between objects that are currently being drawn, not just active objects
 SUB CheckCollisions
     DIM AS INTEGER i, j
-    DIM AS Rectangle2DType r1, r2
+    DIM AS Rectangle r1, r2
 
     ' Check between hero and aliens
     FOR i = 0 TO MAX_ALIENS - 1
@@ -1080,7 +1097,6 @@ SUB CheckCollisions
         END IF
     NEXT
 END SUB
-
 
 ' Erase all current bitmaps from the hidden screen
 ' If the erasure marks the last time that the object will be erased because it is no longer being drawn, deactivate the object
@@ -1140,7 +1156,6 @@ FUNCTION EraseSprites%%
     END IF
 END FUNCTION
 
-
 ' Draw all active objects that should be drawn on the screen
 SUB DrawSprites
     DIM i AS INTEGER
@@ -1150,7 +1165,6 @@ SUB DrawSprites
         IF Explosion(i).bDraw THEN
             ' draw explosion
             _PUTIMAGE (Explosion(i).position.x, Explosion(i).position.y), ExplosionBitmap(Explosion(i).objSpec1)
-
         END IF
     NEXT
 
@@ -1196,7 +1210,6 @@ SUB DrawSprites
     END IF
 END SUB
 
-
 ' Performs all the program-wide initialization at start-up time
 SUB InitializeProgram
     ' Initialize some stuff
@@ -1233,7 +1246,6 @@ SUB InitializeProgram
     InitializeMap
 END SUB
 
-
 ' Releases all allocated resources (use before exiting)
 SUB FinalizeProgram
     ' Free memory used by assets
@@ -1248,7 +1260,6 @@ SUB FinalizeProgram
     ' Save high scores
     SaveHighScores
 END SUB
-
 
 ' Run the game!
 SUB RunGame
@@ -1297,7 +1308,7 @@ SUB RunGame
         ' Draw game HUD
         DrawHUD
 
-        IF ShowFPS THEN _PRINTSTRING (0, 0), STR$(Time_GetHertz) + " FPS"
+        IF ShowFPS THEN _PRINTSTRING (0, 0), STR$(GetFPS) + " FPS"
 
         ' Page flip
         _DISPLAY
@@ -1309,13 +1320,65 @@ SUB RunGame
     FinalizeSprites
     FinalizeHUD
 END SUB
-'-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
-' HEADER FILES
+' PROGRAM ENTRY POINT - Main program loop. Inits the program, draws intro screens and title pages,
+' and waits for user to hit keystroke to indicated what they want to do
 '-----------------------------------------------------------------------------------------------------------------------
-'$INCLUDE:'include/String/StringOps.bas'
-'$INCLUDE:'include/Graphics/Graphics2D.bas'
-'$INCLUDE:'include/IO/InputManager.bas'
-'-----------------------------------------------------------------------------------------------------------------------
-'-----------------------------------------------------------------------------------------------------------------------
+DIM DrawTitle AS _BYTE
+DIM k AS _UNSIGNED LONG
+
+' We want the title page to show the first time
+DrawTitle = _TRUE
+' Initialize everything we need
+InitializeProgram
+' Display the into credits screen
+DisplayIntroCredits
+' Clear keyboard and mouse
+ClearInput
+
+' Main menu loop
+DO
+    ' Draw title page (only if required)
+    IF DrawTitle THEN
+        DisplayTitlePage
+        DrawTitle = _FALSE
+    END IF
+
+    ' Get a key from the user
+    k = _KEYHIT
+
+    ' Check what key was press and action it
+    SELECT CASE k
+        CASE _KEY_ESC, KEY_LOWER_Q, KEY_UPPER_Q
+            EXIT DO
+
+        CASE KEY_LOWER_K, KEY_UPPER_K, KEY_LOWER_M, KEY_UPPER_M, KEY_LOWER_J, KEY_UPPER_J, _KEY_ENTER
+            RunGame
+            NewHighScore Score
+            ClearInput
+            DrawTitle = _TRUE
+
+        CASE KEY_LOWER_S, KEY_UPPER_S
+            DisplayHighScoresScreen
+            ClearInput
+            DrawTitle = _TRUE
+
+        CASE _KEY_F1
+            ShowFPS = NOT ShowFPS
+
+        CASE _KEY_F7
+            NoLimit = NOT NoLimit
+
+        CASE ELSE
+            DrawTitle = _FALSE
+    END SELECT
+LOOP
+
+' Fade out
+FadeScreen _FALSE, UPDATES_PER_SECOND * 2, 100
+
+' Release all resources
+FinalizeProgram
+
+SYSTEM
