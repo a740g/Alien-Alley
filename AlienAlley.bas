@@ -824,27 +824,35 @@ SUB LoadHighScores
         ' Close file
         CLOSE hsFile
     ELSE ' Load default highscores if there is no highscore file
-        HighScore(0).text = "BLAST MASTER"
-        HighScore(1).text = "LASER LARRY"
-        HighScore(2).text = "NOVA NANCY"
-        HighScore(3).text = "ROCKET RALPH"
-        HighScore(4).text = "COMET KATE"
-        HighScore(5).text = "ZAP McGEE"
-        HighScore(6).text = "PIXEL PETE"
-        HighScore(7).text = "SPACE SAM"
-        HighScore(8).text = "ASTRO AL"
-        HighScore(9).text = "CADET BOB"
+        HighScore(0).text = "George Washington"
+        HighScore(0).score = 100
 
-        HighScore(0).score = 5000
-        HighScore(1).score = 4000
-        HighScore(2).score = 3000
-        HighScore(3).score = 2500
-        HighScore(4).score = 2000
-        HighScore(5).score = 1500
-        HighScore(6).score = 1000
-        HighScore(7).score = 750
-        HighScore(8).score = 500
-        HighScore(9).score = 250
+        HighScore(1).text = "John Adams"
+        HighScore(1).score = 90
+
+        HighScore(2).text = "Thomas Jefferson"
+        HighScore(2).score = 80
+
+        HighScore(3).text = "James Madison"
+        HighScore(3).score = 70
+
+        HighScore(4).text = "James Monroe"
+        HighScore(4).score = 60
+
+        HighScore(5).text = "John Quincy Adams"
+        HighScore(5).score = 50
+
+        HighScore(6).text = "Andrew Jackson"
+        HighScore(6).score = 40
+
+        HighScore(7).text = "Martin Van Buren"
+        HighScore(7).score = 30
+
+        HighScore(8).text = "William H. Harrison"
+        HighScore(8).score = 20
+
+        HighScore(9).text = "John Tyler"
+        HighScore(9).score = 10
     END IF
 END SUB
 
