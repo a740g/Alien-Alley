@@ -11,15 +11,13 @@
 '
 '-----------------------------------------------------------------------------------------------------------------------
 
-$IF VERSION < 4.7 THEN
+$IF VERSION < 4.6 THEN
     $ERROR 'This requires the latest version of QB64-PE from https://github.com/QB64-Phoenix-Edition/QB64pe/releases/latest'
 $END IF
 
-$UNSTABLE:TYPEFIELDS
 '$STATIC
 _DEFINE A-Z AS LONG
 OPTION _EXPLICIT
-$COLOR:32
 $ASSERTS
 $EXEICON:'./AlienAlley.ico'
 $VERSIONINFO:ProductName='Alien Alley'
@@ -33,6 +31,7 @@ $VERSIONINFO:OriginalFilename='AlienAlley.exe'
 $VERSIONINFO:FileDescription='Alien Alley executable'
 $VERSIONINFO:FILEVERSION#=2,5,0,0
 $VERSIONINFO:PRODUCTVERSION#=2,5,0,0
+$COLOR:32
 $RESIZE:SMOOTH
 
 ' Game constants
@@ -452,35 +451,6 @@ SUB CreateExplosion (position AS Vector2f)
     NEXT
 END SUB
 
-' @brief Get the digit at position p in an integer
-' @param n The number to extract the digit from
-' @param p The digit position, where 0 = units, 1 = tens, 2 = hundreds, and so on
-' @return The digit at the specified position
-FUNCTION GetDigit& (n AS _UNSIGNED LONG, p AS _UNSIGNED LONG)
-    SELECT CASE p
-        CASE 1
-            n = n \ 10
-        CASE 2
-            n = n \ 100
-        CASE 3
-            n = n \ 1000
-        CASE 4
-            n = n \ 10000
-        CASE 5
-            n = n \ 100000
-        CASE 6
-            n = n \ 1000000
-        CASE 7
-            n = n \ 10000000
-        CASE 8
-            n = n \ 100000000
-        CASE 9
-            n = n \ 1000000000
-    END SELECT
-
-    GetDigit = n MOD 10
-END FUNCTION
-
 ' Loads HUD bitmaps and initialize the HUD
 SUB InitializeHUD
     DIM i AS INTEGER
@@ -526,15 +496,18 @@ SUB DrawHUD
         LINE (SHIELD_STATUS_LEFT, SHIELD_STATUS_TOP)-(SHIELD_STATUS_LEFT + HeroShields, SHIELD_STATUS_BOTTOM), Lime, BF
     END IF
 
-    DIM j AS LONG: j = SCORE_NUMBERS_LEFT
+    DIM s AS LONG: s = _MIN(Score, 999999) ' 6 digits only
     DIM w AS LONG: w = HUDDigitSize.x
     DIM h AS LONG: h = HUDDigitSize.y
+    DIM j AS LONG: j = SCORE_NUMBERS_LEFT + 5 * w ' start at the rightmost score digit position
 
-    ' Render the score
+    ' Render the score from right to left
     DIM i AS LONG
-    FOR i = 5 TO 0 STEP -1
-        _PUTIMAGE (j, SCORE_NUMBERS_TOP)-(j + w - 1, SCORE_NUMBERS_TOP + h), HUDDigitBitmap(GetDigit(Score, i))
-        j = j + w
+    FOR i = 1 TO 6
+        _PUTIMAGE (j, SCORE_NUMBERS_TOP)-(j + w - 1, SCORE_NUMBERS_TOP + h), HUDDigitBitmap(s MOD 10)
+
+        s = s \ 10
+        j = j - w
     NEXT i
 END SUB
 
@@ -851,35 +824,27 @@ SUB LoadHighScores
         ' Close file
         CLOSE hsFile
     ELSE ' Load default highscores if there is no highscore file
-        HighScore(0).text = "Norman Bates"
-        HighScore(0).score = 1000
+        HighScore(0).text = "BLAST MASTER"
+        HighScore(1).text = "LASER LARRY"
+        HighScore(2).text = "NOVA NANCY"
+        HighScore(3).text = "ROCKET RALPH"
+        HighScore(4).text = "COMET KATE"
+        HighScore(5).text = "ZAP McGEE"
+        HighScore(6).text = "PIXEL PETE"
+        HighScore(7).text = "SPACE SAM"
+        HighScore(8).text = "ASTRO AL"
+        HighScore(9).text = "CADET BOB"
 
-        HighScore(1).text = "Darth Vader"
-        HighScore(1).score = 900
-
-        HighScore(2).text = "John McClane"
-        HighScore(2).score = 800
-
-        HighScore(3).text = "Captain Quint"
-        HighScore(3).score = 700
-
-        HighScore(4).text = "Indiana Jones"
-        HighScore(4).score = 600
-
-        HighScore(5).text = "James Bond"
-        HighScore(5).score = 500
-
-        HighScore(6).text = "Mary Poppins"
-        HighScore(6).score = 400
-
-        HighScore(7).text = "Freddy Krueger"
-        HighScore(7).score = 300
-
-        HighScore(8).text = "Jack Sparrow"
-        HighScore(8).score = 200
-
-        HighScore(9).text = "Ace Ventura"
-        HighScore(9).score = 100
+        HighScore(0).score = 5000
+        HighScore(1).score = 4000
+        HighScore(2).score = 3000
+        HighScore(3).score = 2500
+        HighScore(4).score = 2000
+        HighScore(5).score = 1500
+        HighScore(6).score = 1000
+        HighScore(7).score = 750
+        HighScore(8).score = 500
+        HighScore(9).score = 250
     END IF
 END SUB
 
