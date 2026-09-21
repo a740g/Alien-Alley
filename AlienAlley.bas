@@ -905,16 +905,6 @@ SUB MoveSprites (UserInputUp AS _BYTE, UserInputDown AS _BYTE, UserInputLeft AS 
         END IF
     NEXT
 
-    ' Update and cull off-screen alien missiles
-    FOR i = 0 TO MAX_ALIEN_MISSILES - 1
-        IF AlienMissile(i).bDraw THEN
-            UpdateSprite AlienMissile(i)
-            IF AlienMissile(i).position.y > (SCREEN_HEIGHT + AlienMissile(i).size.y + AlienMissile(i).objSpec2) THEN
-                AlienMissile(i).bDraw = _FALSE
-            END IF
-        END IF
-    NEXT
-
     ' Generate hero missiles
     IF UserInputFire AND AllowHeroFire AND Hero.bDraw THEN
         IF CreateHeroMissile(Hero.position.x + HERO_GUN_OFFSET_LEFT, Hero.position.y + HERO_GUN_OFFSET_UP) AND CreateHeroMissile(Hero.position.x + HERO_GUN_OFFSET_RIGHT, Hero.position.y + HERO_GUN_OFFSET_UP) THEN
