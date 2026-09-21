@@ -166,7 +166,10 @@ DIM SHARED TileMapSize AS Vector2f
 DIM SHARED ShowFPS AS _BYTE
 DIM SHARED NoLimit AS _BYTE
 
-' Calculates the bounding rectangle for a sprite given its position & size
+' @brief Calculates the bounding rectangle for a sprite given its position and size.
+' @param position Sprite position (left, top).
+' @param size Sprite size (width, height).
+' @param r Output rectangle (a = top-left, b = bottom-right).
 SUB GetRectangle (position AS Vector2f, size AS Vector2f, r AS Rectangle)
     r.a.x = position.x
     r.a.y = position.y
@@ -174,21 +177,25 @@ SUB GetRectangle (position AS Vector2f, size AS Vector2f, r AS Rectangle)
     r.b.y = position.y + size.y - 1
 END SUB
 
-' Collision testing routine. This is a simple bounding box collision test
+' @brief Tests two rectangles for AABB overlap.
+' @param r1 First rectangle.
+' @param r2 Second rectangle.
+' @return _TRUE if the rectangles overlap, _FALSE otherwise.
 FUNCTION RectanglesCollide%% (r1 AS Rectangle, r2 AS Rectangle)
     RectanglesCollide = NOT (r1.a.x > r2.b.x _ORELSE r2.a.x > r1.b.x _ORELSE r1.a.y > r2.b.y _ORELSE r2.a.y > r1.b.y)
 END FUNCTION
 
-' Clear mouse and keyboard events
+' @brief Clears all pending mouse and keyboard input events.
 SUB ClearInput
     DO WHILE _MOUSEINPUT
     LOOP
     _KEYCLEAR
 END SUB
 
-' Fades the current _DEST to/from black
-' maxFPS - target frame rate during fade
-' stopPercent - percentage at which to stop early (for partial fades)
+' @brief Fades the current _DEST to/from black.
+' @param isIn _TRUE for fade-in, _FALSE for fade-out.
+' @param maxFPS Target frame rate during the fade animation.
+' @param stopPercent Percentage (0-100) at which to stop early (for partial fades).
 SUB FadeScreen (isIn AS _BYTE, maxFPS AS _UNSIGNED INTEGER, stopPercent AS _BYTE)
     DIM AS LONG dspImg, tmpImg
 
@@ -222,11 +229,12 @@ SUB FadeScreen (isIn AS _BYTE, maxFPS AS _UNSIGNED INTEGER, stopPercent AS _BYTE
     _FREEIMAGE tmpImg
 END SUB
 
-' Loads an image and returns and image handle
-' fileName - filename or memory buffer of the image
-' isHardware - load as a hardware image
-' otherOptions - image loading options (e.g., "memory", "HQ2XA" scaler)
-' transparentColor - color key for transparency (set to -1 to disable)
+' @brief Loads an image from file or memory buffer and returns a handle.
+' @param fileName Filename or memory buffer of the image.
+' @param isHardware If _TRUE, loads as a hardware image.
+' @param otherOptions Additional loading options (e.g., "memory", "HQ2XA" scaler).
+' @param transparentColor Color key for transparency (use -1 to disable).
+' @return Image handle on success, -1 on failure.
 FUNCTION LoadImage& (fileName AS STRING, isHardware AS _BYTE, otherOptions AS STRING, transparentColor AS _INTEGER64)
     DIM handle AS LONG
 
@@ -245,7 +253,7 @@ FUNCTION LoadImage& (fileName AS STRING, isHardware AS _BYTE, otherOptions AS ST
     LoadImage = handle
 END FUNCTION
 
-' Loads the hero, alien, and missile sprites and initializes the sprite structures
+' @brief Loads sprite bitmaps and initializes all sprite structures for gameplay.
 SUB InitializeSprites
     DIM i AS INTEGER
 
@@ -334,7 +342,7 @@ SUB InitializeSprites
     GunBlinkState = 1
 END SUB
 
-' Frees the memory occupied by the sprites
+' @brief Frees sprite bitmap resources allocated during InitializeSprites.
 SUB FinalizeSprites
     DIM i AS INTEGER
 
@@ -351,9 +359,14 @@ SUB FinalizeSprites
     _FREEIMAGE HeroBitmap(1)
 END SUB
 
-' Updates the "UserInput..." variables used by the MoveSprites routine from supported input devices
-' Return _TRUE if ESC was pressed
-' TODO: Add game controller support
+' @brief Collects input from keyboard and mouse, populating the UserInput variables.
+' @param UserInputUp Set to _TRUE if up movement requested.
+' @param UserInputDown Set to _TRUE if down movement requested.
+' @param UserInputLeft Set to _TRUE if left movement requested.
+' @param UserInputRight Set to _TRUE if right movement requested.
+' @param UserInputFire Set to _TRUE if fire requested.
+' @return _TRUE if ESC was pressed (game quit requested), _FALSE otherwise.
+' TODO: Add game controller support.
 FUNCTION GetInput%% (UserInputUp AS _BYTE, UserInputDown AS _BYTE, UserInputLeft AS _BYTE, UserInputRight AS _BYTE, UserInputFire AS _BYTE)
     DIM mouseMovement AS Vector2f
     DIM mouseFire AS _BYTE
@@ -375,8 +388,10 @@ FUNCTION GetInput%% (UserInputUp AS _BYTE, UserInputDown AS _BYTE, UserInputLeft
     GetInput = _KEYDOWN(_KEY_ESC)
 END FUNCTION
 
-' Finds a non-active hero missile in the HeroMissile array and initializes it
-' Return _TRUE if it was successful
+' @brief Finds a non-active hero missile slot and initializes it at the given position.
+' @param x Horizontal spawn position.
+' @param y Vertical spawn position.
+' @return _TRUE if a missile was created successfully, _FALSE if all slots are in use.
 FUNCTION CreateHeroMissile%% (x AS INTEGER, y AS INTEGER)
     DIM i AS INTEGER
 
@@ -396,7 +411,7 @@ FUNCTION CreateHeroMissile%% (x AS INTEGER, y AS INTEGER)
     CreateHeroMissile = _FALSE
 END FUNCTION
 
-' Finds a free alien in the Alien array and initializes it
+' @brief Finds a free alien slot and spawns a new alien at a random position at the top of the screen.
 SUB CreateAlien
     DIM i AS INTEGER
 
@@ -415,7 +430,9 @@ SUB CreateAlien
     NEXT
 END SUB
 
-' Finds a free alien missile slot and initializes it at the given position (near an alien gun)
+' @brief Finds a free alien missile slot and initializes it at the given position.
+' @param x Horizontal spawn position (near an alien gun).
+' @param y Vertical spawn position (near an alien gun).
 SUB CreateAlienMissile (x AS INTEGER, y AS INTEGER)
     DIM i AS INTEGER
 
@@ -432,7 +449,8 @@ SUB CreateAlienMissile (x AS INTEGER, y AS INTEGER)
     NEXT
 END SUB
 
-' Starts an explosion at the given coordinates.
+' @brief Starts an explosion animation at the given coordinates.
+' @param position Explosion center position.
 SUB CreateExplosion (position AS Vector2f)
     DIM i AS INTEGER
 
@@ -448,7 +466,7 @@ SUB CreateExplosion (position AS Vector2f)
     NEXT
 END SUB
 
-' Loads HUD bitmaps and initializes the HUD
+' @brief Loads HUD bitmaps (panel and digit sprites) and initializes the HUD overlay.
 SUB InitializeHUD
     DIM i AS INTEGER
 
@@ -470,7 +488,7 @@ SUB InitializeHUD
     HUDDigitSize.y = _HEIGHT(HUDDigitBitmap(0))
 END SUB
 
-' Destroys the HUD
+' @brief Frees all HUD bitmap resources (digit sprites and HUD panel).
 SUB FinalizeHUD
     DIM i AS INTEGER
 
@@ -482,7 +500,7 @@ SUB FinalizeHUD
     _FREEIMAGE HUDBitmap(1)
 END SUB
 
-' Draws the status area at the bottom of the screen showing the player's current score and shield strength
+' @brief Draws the HUD panel at the bottom of the screen, including score digits and shield bar.
 SUB DrawHUD
     ' First draw the HUD panel onto the frame buffer
     _PUTIMAGE (0, SCREEN_HEIGHT - HUDSize.y), HUDBitmap(GunBlinkState)
@@ -508,7 +526,7 @@ SUB DrawHUD
     NEXT i
 END SUB
 
-' Initialize the map with random tiles
+' @brief Loads background tile bitmaps and initializes the scrolling starfield map.
 SUB InitializeMap
     DIM AS LONG x, y, c
 
@@ -547,7 +565,7 @@ SUB InitializeMap
     NEXT
 END SUB
 
-' Frees background tile map resources
+' @brief Frees background tile map resources.
 SUB FinalizeMap
     DIM i AS LONG
 
@@ -556,7 +574,7 @@ SUB FinalizeMap
     NEXT
 END SUB
 
-' Scrolls the background tile map downward
+' @brief Advances the scrolling starfield map by one row.
 SUB UpdateMap
     DIM AS LONG x, y, c
 
@@ -593,7 +611,7 @@ SUB UpdateMap
     END IF
 END SUB
 
-' Draws the tile map to the frame buffer
+' @brief Renders the scrolling starfield background tiles to the frame buffer.
 SUB DrawMap
     DIM AS LONG x, y
 
@@ -604,7 +622,8 @@ SUB DrawMap
     NEXT
 END SUB
 
-' Loads and plays a MIDI file (loops it)
+' @brief Stops any currently playing MIDI and starts looping the specified file.
+' @param fileName Path to the MIDI file to play. Pass "" to stop playback.
 SUB PlayMIDIFile (fileName AS STRING)
     STATIC MIDIHandle AS LONG
 
@@ -622,7 +641,7 @@ SUB PlayMIDIFile (fileName AS STRING)
     END IF
 END SUB
 
-' Initialize sound effect playback
+' @brief Initializes sound effect playback handles.
 SUB InitializeSound
     ' Load the sound effects
     ExplosionSound = _SNDOPEN("dat/sfx/snd/explode.wav")
@@ -631,7 +650,7 @@ SUB InitializeSound
     _ASSERT LaserSound > 0
 END SUB
 
-' Close all sound related stuff and frees resources
+' @brief Closes all sound effect handles and stops any playing MIDI.
 SUB FinalizeSound
     _SNDCLOSE ExplosionSound
     _SNDCLOSE LaserSound
@@ -639,6 +658,8 @@ SUB FinalizeSound
     PlayMIDIFile _STR_EMPTY ' This is will unload whatever MIDI data is there in memory
 END SUB
 
+' @brief Calculates and returns the current frames per second.
+' @return Current FPS (updated once per second).
 FUNCTION GetFPS~&
     STATIC AS _UNSIGNED LONG counter, finalFPS
     STATIC lastTime AS DOUBLE
@@ -656,13 +677,16 @@ FUNCTION GetFPS~&
     GetFPS = finalFPS
 END FUNCTION
 
-' Centers a string on the screen and draws it
+' @brief Centers a string horizontally on the screen and draws it.
+' @param s String to draw.
+' @param y Vertical screen position.
+' @param c Text color.
 SUB DrawStringCenter (s AS STRING, y AS LONG, c AS _UNSIGNED LONG)
     COLOR c
     _PRINTSTRING ((SCREEN_WIDTH \ 2) - (_PRINTWIDTH(s) \ 2), y), s
 END SUB
 
-' Displays the HighScore array on the screen.
+' @brief Renders the high score list on the screen.
 SUB DrawHighScores
     DIM AS INTEGER i
 
@@ -672,7 +696,7 @@ SUB DrawHighScores
     NEXT
 END SUB
 
-' Displays the high score screen from the title page
+' @brief Displays the high score list screen, waiting for a keypress to return.
 SUB DisplayHighScoresScreen
     ClearInput
 
@@ -696,7 +720,8 @@ SUB DisplayHighScoresScreen
     LOOP WHILE _KEYHIT <= 0 ' <= 0 is used to ignore key up events
 END SUB
 
-' Inserts a new score into the HighScore array and prompts for the player's name
+' @brief Inserts a new score into the sorted high score list and prompts for the player's name.
+' @param NewScore The player's score to insert.
 SUB NewHighScore (NewScore AS LONG)
     DIM AS INTEGER i, sPos
     DIM k AS _UNSIGNED INTEGER
@@ -753,7 +778,7 @@ SUB NewHighScore (NewScore AS LONG)
     LOOP WHILE k <> _KEY_ENTER
 END SUB
 
-' Displays the Alien Alley title page
+' @brief Displays the title screen with a fade-in effect and plays the intro music.
 SUB DisplayTitlePage
     ' Start title music
     PlayMIDIFile "dat/sfx/mus/alienintro.mid"
@@ -774,7 +799,7 @@ SUB DisplayTitlePage
     FadeScreen _TRUE, UPDATES_PER_SECOND * 2, 100
 END SUB
 
-' Displays the introduction credits
+' @brief Displays the production credits with fade in/out transitions.
 SUB DisplayIntroCredits
     ' Clear the screen
     CLS , 0 ' black with no alpha
@@ -797,8 +822,7 @@ SUB DisplayIntroCredits
     FadeScreen _FALSE, UPDATES_PER_SECOND * 2, 100 ' fade out
 END SUB
 
-' Loads the high score file from disk
-' If a high score file cannot be found or cannot be read, a default list of high-score entries is created
+' @brief Loads the high score list from disk, falling back to defaults if the file is missing or unreadable.
 SUB LoadHighScores
     IF _FILEEXISTS(HIGH_SCORE_FILENAME) THEN
         DIM i AS INTEGER
@@ -846,7 +870,7 @@ SUB LoadHighScores
     END IF
 END SUB
 
-' Writes the HighScore array out to the high score file
+' @brief Writes the current high score list to disk.
 SUB SaveHighScores
     DIM i AS INTEGER
     DIM hsFile AS LONG
@@ -863,7 +887,8 @@ SUB SaveHighScores
     CLOSE hsFile
 END SUB
 
-' Moves a sprite by its velocity and clamps it within its boundary
+' @brief Moves a sprite by its velocity and clamps it within its boundary (if defined).
+' @param s Sprite to update.
 SUB UpdateSprite (s AS Sprite)
     ' Apply velocity
     s.position.x = s.position.x + s.velocity.x
@@ -880,7 +905,12 @@ SUB UpdateSprite (s AS Sprite)
     END IF
 END SUB
 
-' Updates all sprite positions, generates missiles, and handles off-screen cleanup
+' @brief Updates all sprite positions, generates new missiles, and handles off-screen cleanup.
+' @param UserInputUp _TRUE if up movement requested.
+' @param UserInputDown _TRUE if down movement requested.
+' @param UserInputLeft _TRUE if left movement requested.
+' @param UserInputRight _TRUE if right movement requested.
+' @param UserInputFire _TRUE if fire requested.
 SUB MoveSprites (UserInputUp AS _BYTE, UserInputDown AS _BYTE, UserInputLeft AS _BYTE, UserInputRight AS _BYTE, UserInputFire AS _BYTE)
     DIM i AS INTEGER
     DIM AlienFireResult AS INTEGER
@@ -986,12 +1016,12 @@ SUB MoveSprites (UserInputUp AS _BYTE, UserInputDown AS _BYTE, UserInputLeft AS 
     IF UserInputUp THEN MapScrollStep = MAP_SCROLL_STEP_FAST ELSE MapScrollStep = MAP_SCROLL_STEP_NORMAL
 END SUB
 
-' Check for collisions between various objects and start explosions if they collide
-' Collision detection is performed between:
-'   * aliens and hero
-'   * aliens and hero missiles
-'   * hero and alien missiles
-' Note that all tests are performed between objects that are currently being drawn, not just active objects
+' @brief Checks for collisions between sprites and triggers explosions.
+' Tests performed:
+'   - Aliens vs. hero
+'   - Aliens vs. hero missiles
+'   - Hero vs. alien missiles
+' @note All tests only run for objects that are currently being drawn (not just active).
 SUB CheckCollisions
     DIM AS INTEGER i, j
     DIM AS Rectangle r1, r2
@@ -1048,7 +1078,8 @@ SUB CheckCollisions
     NEXT
 END SUB
 
-' Erases sprites from the screen and deactivates objects no longer being drawn
+' @brief Erases sprites from the screen and deactivates objects no longer being drawn.
+' @return _TRUE if the game over condition has been met, _FALSE otherwise.
 FUNCTION EraseSprites%%
     DIM i AS INTEGER
     STATIC DeathCounter AS _UNSIGNED INTEGER
@@ -1099,7 +1130,7 @@ FUNCTION EraseSprites%%
     END IF
 END FUNCTION
 
-' Draws all active sprites that are currently on-screen
+' @brief Draws all active sprites that are currently on-screen.
 SUB DrawSprites
     DIM i AS INTEGER
 
@@ -1148,7 +1179,7 @@ SUB DrawSprites
     END IF
 END SUB
 
-' Performs all the program-wide initialization at start-up time
+' @brief Performs all program-wide initialization: setup, assets, and sound.
 SUB InitializeProgram
     RANDOMIZE TIMER
 
@@ -1182,7 +1213,7 @@ SUB InitializeProgram
     InitializeMap
 END SUB
 
-' Releases all allocated resources (use before exiting)
+' @brief Releases all allocated resources (call before exiting).
 SUB FinalizeProgram
     ' Free memory used by assets
     FinalizeMap
@@ -1197,7 +1228,7 @@ SUB FinalizeProgram
     SaveHighScores
 END SUB
 
-' Main game loop
+' @brief Runs the main game loop: input, update, render, repeat until game over.
 SUB RunGame
     DIM AS _BYTE UserInputUp, UserInputDown, UserInputLeft, UserInputRight, UserInputFire, GameOver
 
