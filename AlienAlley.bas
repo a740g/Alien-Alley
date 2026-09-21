@@ -179,18 +179,16 @@ FUNCTION RectanglesCollide%% (r1 AS Rectangle, r2 AS Rectangle)
     RectanglesCollide = NOT (r1.a.x > r2.b.x _ORELSE r2.a.x > r1.b.x _ORELSE r1.a.y > r2.b.y _ORELSE r2.a.y > r1.b.y)
 END FUNCTION
 
-' Chear mouse and keyboard events
+' Clear mouse and keyboard events
 SUB ClearInput
     DO WHILE _MOUSEINPUT
     LOOP
     _KEYCLEAR
 END SUB
 
-' Fades the current _DEST to the screen to / from black
-' img - image to use. can be the screen or _DEST
-' isIn - True or False. True is fade in, False is fade out
-' fps& - speed (updates / second)
-' stopPercent - %age when to bail out (use for partial fades)
+' Fades the current _DEST to/from black
+' maxFPS - target frame rate during fade
+' stopPercent - percentage at which to stop early (for partial fades)
 SUB FadeScreen (isIn AS _BYTE, maxFPS AS _UNSIGNED INTEGER, stopPercent AS _BYTE)
     DIM AS LONG dspImg, tmpImg
 
@@ -226,9 +224,9 @@ END SUB
 
 ' Loads an image and returns and image handle
 ' fileName - filename or memory buffer of the image
-' isHardware - image will be loaded as a hardware image (is8bpp must not be true for this to work)
-' otherOptions - other image loading options like "memory", "adaptive" and the various image scalers
-' transparentColor - if this is >= 0 then the color specified by this becomes the transparency color key
+' isHardware - load as a hardware image
+' otherOptions - image loading options (e.g., "memory", "HQ2XA" scaler)
+' transparentColor - color key for transparency (set to -1 to disable)
 FUNCTION LoadImage& (fileName AS STRING, isHardware AS _BYTE, otherOptions AS STRING, transparentColor AS _INTEGER64)
     DIM handle AS LONG
 
@@ -417,8 +415,7 @@ SUB CreateAlien
     NEXT
 END SUB
 
-' Finds a free alien missile in the AlienMissile array and initializes it.
-' The x and y positions of the missile are set from the x and y parameters which will place them somewhere near an alien gun.
+' Finds a free alien missile slot and initializes it at the given position (near an alien gun)
 SUB CreateAlienMissile (x AS INTEGER, y AS INTEGER)
     DIM i AS INTEGER
 
@@ -435,7 +432,7 @@ SUB CreateAlienMissile (x AS INTEGER, y AS INTEGER)
     NEXT
 END SUB
 
-' Starts an explosion occuring at the appropriate x and y coordinates.
+' Starts an explosion at the given coordinates.
 SUB CreateExplosion (position AS Vector2f)
     DIM i AS INTEGER
 
@@ -451,7 +448,7 @@ SUB CreateExplosion (position AS Vector2f)
     NEXT
 END SUB
 
-' Loads HUD bitmaps and initialize the HUD
+' Loads HUD bitmaps and initializes the HUD
 SUB InitializeHUD
     DIM i AS INTEGER
 
@@ -533,10 +530,10 @@ SUB InitializeMap
     ' Set other variables
     MapScrollStep = MAP_SCROLL_STEP_NORMAL
 
-    ' Just set some ramdom tiles on the tile map
+    ' Set random tiles on the tile map
     FOR y = 0 TO TileMapSize.y
         FOR x = 1 TO TileMapSize.x
-            ' We just need more stars and less planets
+            ' Bias toward stars, fewer planets
             c = RND * 256
             IF c = 128 THEN
                 c = NUM_TILES - 1
@@ -550,7 +547,7 @@ SUB InitializeMap
     NEXT
 END SUB
 
-' Destroys the background tile map stuff
+' Frees background tile map resources
 SUB FinalizeMap
     DIM i AS LONG
 
@@ -559,18 +556,18 @@ SUB FinalizeMap
     NEXT
 END SUB
 
-' Scrolls the background using the backgound tiles
+' Scrolls the background tile map downward
 SUB UpdateMap
     DIM AS LONG x, y, c
 
-    ' Shift all tiles down by "scrollstep" pixels
+    ' Advance all tile rows by the scroll step amount
     FOR y = 0 TO TileMapSize.y
         TileMapY(y) = TileMapY(y) + MapScrollStep
     NEXT
 
-    ' Check if the first row is completely on-screen and if so add a fresh row on top
+    ' When the top row scrolls onto the screen, shift everything down
     IF TileMapY(0) >= 0 THEN
-        ' Shift all tiles down a row so that the last one is removed
+        ' Shift all rows down one position, removing the bottom row
         FOR y = TileMapSize.y TO 1 STEP -1
             TileMapY(y) = TileMapY(y - 1)
 
@@ -607,27 +604,25 @@ SUB DrawMap
     NEXT
 END SUB
 
-' Loads and plays a MIDI file (loops it too)
+' Loads and plays a MIDI file (loops it)
 SUB PlayMIDIFile (fileName AS STRING)
-    STATIC MIDIHandle AS LONG ' Sound handle
+    STATIC MIDIHandle AS LONG
 
-    ' Unload if there is anything previously loaded
+    ' Stop and close any previously loaded MIDI
     IF MIDIHandle > 0 THEN
         _SNDSTOP MIDIHandle
         _SNDCLOSE MIDIHandle
         MIDIHandle = 0
     END IF
 
-    ' Check if the file exists
     IF _FILEEXISTS(fileName) THEN
         MIDIHandle = _SNDOPEN(fileName)
         _ASSERT MIDIHandle > 0
-        ' Loop the MIDI file
-        IF MIDIHandle > 0 THEN _SNDLOOP MIDIHandle
+        _SNDLOOP MIDIHandle
     END IF
 END SUB
 
-' Initialize sound stuff
+' Initialize sound effect playback
 SUB InitializeSound
     ' Load the sound effects
     ExplosionSound = _SNDOPEN("dat/sfx/snd/explode.wav")
@@ -661,8 +656,7 @@ FUNCTION GetFPS~&
     GetFPS = finalFPS
 END FUNCTION
 
-' Centers a string on the screen
-' The function calculates the correct starting column position to center the string on the screen and then draws the actual text
+' Centers a string on the screen and draws it
 SUB DrawStringCenter (s AS STRING, y AS LONG, c AS _UNSIGNED LONG)
     COLOR c
     _PRINTSTRING ((SCREEN_WIDTH \ 2) - (_PRINTWIDTH(s) \ 2), y), s
@@ -702,7 +696,7 @@ SUB DisplayHighScoresScreen
     LOOP WHILE _KEYHIT <= 0 ' <= 0 is used to ignore key up events
 END SUB
 
-' Manipulates the HighScore array to make room for the users score and gets the new text
+' Inserts a new score into the HighScore array and prompts for the player's name
 SUB NewHighScore (NewScore AS LONG)
     DIM AS INTEGER i, sPos
     DIM k AS _UNSIGNED INTEGER
@@ -767,17 +761,16 @@ SUB DisplayTitlePage
     ' Clear screen
     CLS , 0 ' black with no alpha
 
-    ' First page of stuff
+    ' Load and display the title screen image
     DIM tmp AS LONG: tmp = LoadImage("dat/gfx/title.pcx", _FALSE, "HQ2XA", -1)
     _ASSERT tmp < -1
 
-    ' Stretch bmp to fill the screen
+    ' Stretch the image to fill the screen
     _PUTIMAGE , tmp
 
-    ' Free the image
     _FREEIMAGE tmp
 
-    ' Fade in
+    ' Fade in from black
     FadeScreen _TRUE, UPDATES_PER_SECOND * 2, 100
 END SUB
 
@@ -786,17 +779,16 @@ SUB DisplayIntroCredits
     ' Clear the screen
     CLS , 0 ' black with no alpha
 
-    ' First page of stuff
+    ' Display publisher credit
     DrawStringCenter "Coriolis Group Books", 192, Red
     DrawStringCenter "Presents", 208, Red
 
-    FadeScreen _TRUE, UPDATES_PER_SECOND * 2, 100 ' fade in
-    FadeScreen _FALSE, UPDATES_PER_SECOND * 2, 100 ' fade out
+    FadeScreen _TRUE, UPDATES_PER_SECOND * 2, 100
+    FadeScreen _FALSE, UPDATES_PER_SECOND * 2, 100
 
-    ' Clear the screen
-    CLS , 0 ' black with no alpha
+    CLS , 0
 
-    ' Second page of stuff
+    ' Display author credit
     DrawStringCenter "A", 176, Red
     DrawStringCenter "Dave Roberts", 192, Red
     DrawStringCenter "Production", 208, Red
@@ -812,18 +804,16 @@ SUB LoadHighScores
         DIM i AS INTEGER
         DIM hsFile AS LONG
 
-        ' Open the highscore file; if there is a problem load defaults
+        ' Read scores from file
         hsFile = FREEFILE
         OPEN HIGH_SCORE_FILENAME FOR INPUT AS hsFile
 
-        ' Read the name and the scores
         FOR i = 0 TO NUM_HIGH_SCORES - 1
             INPUT #hsFile, HighScore(i).text, HighScore(i).score
         NEXT
 
-        ' Close file
         CLOSE hsFile
-    ELSE ' Load default highscores if there is no highscore file
+    ELSE ' Load default high scores
         HighScore(0).text = "George Washington"
         HighScore(0).score = 100
 
@@ -873,13 +863,13 @@ SUB SaveHighScores
     CLOSE hsFile
 END SUB
 
-' This moves the sprite based on the velocity and if there is a boundary specified then keeps it confined
+' Moves a sprite by its velocity and clamps it within its boundary
 SUB UpdateSprite (s AS Sprite)
-    ' First move the sprite
+    ' Apply velocity
     s.position.x = s.position.x + s.velocity.x
     s.position.y = s.position.y + s.velocity.y
 
-    ' Next limit movement if boundary is specified
+    ' Clamp to boundary if defined
     IF s.boundary.b.x > s.boundary.a.x THEN
         IF s.position.x < s.boundary.a.x THEN s.position.x = s.boundary.a.x
         IF s.position.x > s.boundary.b.x - s.size.x THEN s.position.x = s.boundary.b.x - s.size.x
@@ -890,31 +880,37 @@ SUB UpdateSprite (s AS Sprite)
     END IF
 END SUB
 
-' Takes care of moving hero ship and alien sprites, based on user input and their behavioral algorithms
-' MoveSprites is also where missiles are generated and off-screen images are removed from play
+' Updates all sprite positions, generates missiles, and handles off-screen cleanup
 SUB MoveSprites (UserInputUp AS _BYTE, UserInputDown AS _BYTE, UserInputLeft AS _BYTE, UserInputRight AS _BYTE, UserInputFire AS _BYTE)
     DIM i AS INTEGER
     DIM AlienFireResult AS INTEGER
     DIM AlienProximity AS INTEGER
 
-    ' First, take care of the hero
+    ' Update hero ship based on input
     IF UserInputUp THEN Hero.velocity.y = -HERO_Y_VELOCITY
     IF UserInputDown THEN Hero.velocity.y = HERO_Y_VELOCITY
     IF UserInputLeft THEN Hero.velocity.x = -HERO_X_VELOCITY
     IF UserInputRight THEN Hero.velocity.x = HERO_X_VELOCITY
     UpdateSprite Hero
-    ' Set these to zero so that we don't keep moving
     Hero.velocity.x = 0
     Hero.velocity.y = 0
 
-    ' Update hero missiles
+    ' Update and cull off-screen hero missiles
     FOR i = 0 TO MAX_HERO_MISSILES - 1
         IF HeroMissile(i).bDraw THEN
-            ' Update position
             UpdateSprite HeroMissile(i)
-            ' Stop drawing when it's off screen
             IF HeroMissile(i).position.y < -(HeroMissile(i).size.y + HeroMissile(i).objSpec2) THEN
                 HeroMissile(i).bDraw = _FALSE
+            END IF
+        END IF
+    NEXT
+
+    ' Update and cull off-screen alien missiles
+    FOR i = 0 TO MAX_ALIEN_MISSILES - 1
+        IF AlienMissile(i).bDraw THEN
+            UpdateSprite AlienMissile(i)
+            IF AlienMissile(i).position.y > (SCREEN_HEIGHT + AlienMissile(i).size.y + AlienMissile(i).objSpec2) THEN
+                AlienMissile(i).bDraw = _FALSE
             END IF
         END IF
     NEXT
@@ -927,23 +923,21 @@ SUB MoveSprites (UserInputUp AS _BYTE, UserInputDown AS _BYTE, UserInputLeft AS 
         AllowHeroFire = _FALSE
     END IF
 
-    ' Update alien missiles
+    ' Update and cull off-screen alien missiles
     FOR i = 0 TO MAX_ALIEN_MISSILES - 1
         IF AlienMissile(i).bDraw THEN
-            ' Update position
             UpdateSprite AlienMissile(i)
-            ' Stop drawing when it's off screen
             IF AlienMissile(i).position.y > (SCREEN_HEIGHT + AlienMissile(i).size.y + AlienMissile(i).objSpec2) THEN
                 AlienMissile(i).bDraw = _FALSE
             END IF
         END IF
     NEXT
 
-    ' Move aliens
+    ' Move aliens and handle their AI
     FOR i = 0 TO MAX_ALIENS - 1
         IF Alien(i).bDraw THEN
             IF Alien(i).objSpec1 = 0 THEN
-                ' Pick a new direction
+                ' Pick a new horizontal direction
                 IF INT(TIMER) MOD 2 THEN
                     Alien(i).velocity.x = RND * ALIEN_X_VELOCITY
                 ELSE
@@ -953,15 +947,14 @@ SUB MoveSprites (UserInputUp AS _BYTE, UserInputDown AS _BYTE, UserInputLeft AS 
             ELSE
                 Alien(i).objSpec1 = Alien(i).objSpec1 - 1
             END IF
-            ' Update alien position
             UpdateSprite Alien(i)
 
-            ' Move alien to top when it gets to bottom
+            ' Wrap around to top if past bottom
             IF Alien(i).position.y > SCREEN_HEIGHT + Alien(i).size.y THEN Alien(i).position.y = -Alien(i).size.y
 
-            ' Generate alien missiles
+            ' Fire at hero if not in cooldown
             IF Alien(i).objSpec2 = 0 THEN
-                AlienFireResult = RND * 100 ' in percent
+                AlienFireResult = RND * 100
                 AlienProximity = Alien(i).position.x - Hero.position.x
 
                 IF AlienProximity < 0 THEN AlienProximity = -AlienProximity
@@ -978,17 +971,15 @@ SUB MoveSprites (UserInputUp AS _BYTE, UserInputDown AS _BYTE, UserInputLeft AS 
         END IF
     NEXT
 
-    ' Generate aliens
+    ' Spawn a new alien if the counter has elapsed
     IF AlienGenCounter = 0 THEN
-        ' Generate an alien
         CreateAlien
-        ' Reinit generate counter
         AlienGenCounter = ALIEN_GEN_RATE_BASE + RND * ALIEN_GEN_RATE_VAR
     ELSE
         AlienGenCounter = AlienGenCounter - 1
     END IF
 
-    ' Update explosions -- note, we don't really "move" them, just make the animation go
+    ' Advance explosion animations
     FOR i = 0 TO MAX_EXPLOSIONS - 1
         IF Explosion(i).bDraw THEN
             IF Explosion(i).objSpec2 = 0 THEN
@@ -1001,7 +992,7 @@ SUB MoveSprites (UserInputUp AS _BYTE, UserInputDown AS _BYTE, UserInputLeft AS 
         END IF
     NEXT
 
-    ' Check at what speed the map needs to be scrolled
+    ' Adjust scroll speed based on player direction
     IF UserInputUp THEN MapScrollStep = MAP_SCROLL_STEP_FAST ELSE MapScrollStep = MAP_SCROLL_STEP_NORMAL
 END SUB
 
@@ -1015,11 +1006,9 @@ SUB CheckCollisions
     DIM AS INTEGER i, j
     DIM AS Rectangle r1, r2
 
-    ' Check between hero and aliens
+    ' Check hero vs. aliens
     FOR i = 0 TO MAX_ALIENS - 1
-        ' Make sure both hero and alien are still being drawn
-        ' They may still be active but have been removed from the screen and are just being erased
-        ' If they are still onscreen, then perform a rectangle test
+        ' Only test if both are currently on screen (they may be active but off screen)
         GetRectangle Hero.position, Hero.size, r1
         GetRectangle Alien(i).position, Alien(i).size, r2
         IF Hero.bDraw AND Alien(i).bDraw AND RectanglesCollide(r1, r2) THEN
@@ -1036,7 +1025,7 @@ SUB CheckCollisions
         IF NOT Alien(i).bDraw THEN _CONTINUE
 
         FOR j = 0 TO MAX_HERO_MISSILES - 1
-            ' Do similiar short circuit, mondo huge test as above
+            ' Short-circuit: skip if missile is off screen
             GetRectangle Alien(i).position, Alien(i).size, r1
             GetRectangle HeroMissile(j).position, HeroMissile(j).size, r2
             IF HeroMissile(j).bDraw AND RectanglesCollide(r1, r2) THEN
@@ -1045,81 +1034,72 @@ SUB CheckCollisions
                 CreateExplosion Alien(i).position
                 Score = Score + POINTS_PER_ALIEN
                 _SNDPLAYCOPY ExplosionSound, , (2 * (Alien(i).position.x + Alien(i).size.x / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1)
-                EXIT FOR ' alien is destroyed
+                EXIT FOR ' alien destroyed, stop checking this alien
             END IF
         NEXT
     NEXT
 
-    ' Check between hero and alien missiles
+    ' Check hero vs. alien missiles
     FOR i = 0 TO MAX_ALIEN_MISSILES - 1
-        ' Again, rely on short circuiting
         GetRectangle Hero.position, Hero.size, r1
         GetRectangle AlienMissile(i).position, AlienMissile(i).size, r2
         IF AlienMissile(i).bDraw AND Hero.bDraw AND RectanglesCollide(r1, r2) THEN
-            AlienMissile(i).bDraw = _FALSE ' destroy missile in any case
+            AlienMissile(i).bDraw = _FALSE
             IF HeroShields <= 0 THEN
                 Hero.bDraw = _FALSE
                 CreateExplosion Hero.position
                 _SNDPLAYCOPY ExplosionSound, , (2 * (Hero.position.x + Hero.size.x / 2) - SCREEN_WIDTH + 1) / (SCREEN_WIDTH - 1)
-                EXIT FOR ' hero is destroyed
+                EXIT FOR ' player destroyed
             ELSE
-                ' take away a bit of shields
-                HeroShields = HeroShields - 5
-                IF HeroShields < 0 THEN HeroShields = 0
+                ' Reduce shields (clamp to 0)
+                HeroShields = _MAX(0, HeroShields - 5)
             END IF
         END IF
     NEXT
 END SUB
 
-' Erase all current bitmaps from the hidden screen
-' If the erasure marks the last time that the object will be erased because it is no longer being drawn, deactivate the object
+' Erases sprites from the screen and deactivates objects no longer being drawn
 FUNCTION EraseSprites%%
     DIM i AS INTEGER
     STATIC DeathCounter AS _UNSIGNED INTEGER
 
     EraseSprites = _FALSE
 
-    ' Do player and possibly deactivate
-    IF Hero.isActive THEN
-        IF NOT Hero.bDraw THEN
-            Hero.isActive = _FALSE
-            DeathCounter = DEATH_DELAY
-        END IF
+    ' Deactivate hero if off-screen
+    IF Hero.isActive _ANDALSO NOT Hero.bDraw THEN
+        Hero.isActive = _FALSE
+        DeathCounter = DEATH_DELAY
     END IF
 
-    ' Erase and deactivate hero missiles
+    ' Deactivate hero missiles no longer being drawn
     FOR i = 0 TO MAX_HERO_MISSILES - 1
-        ' Deactivate missile if we aren't going to draw or erase it anymore
         IF NOT HeroMissile(i).bDraw THEN
             HeroMissile(i).isActive = _FALSE
         END IF
     NEXT
 
-    ' Erase and deactivate aliens
+    ' Deactivate destroyed aliens
     FOR i = 0 TO MAX_ALIENS - 1
-        ' Deactive alien if it's been destroyed
         IF NOT Alien(i).bDraw THEN
             Alien(i).isActive = _FALSE
         END IF
     NEXT
 
-    ' Erase and deactivate alien missiles
+    ' Deactivate alien missiles no longer being drawn
     FOR i = 0 TO MAX_ALIEN_MISSILES - 1
-        ' deactivate missile if we aren't going to draw or erase it anymore
         IF NOT AlienMissile(i).bDraw THEN
             AlienMissile(i).isActive = _FALSE
         END IF
     NEXT
 
-    ' Erase and deactivate explosions
+    ' Deactivate completed explosions
     FOR i = 0 TO MAX_EXPLOSIONS - 1
-        ' Deactivate if explosion has run its course
         IF NOT Explosion(i).bDraw THEN
             Explosion(i).isActive = _FALSE
         END IF
     NEXT
 
-    ' Hero has died - signal game over after brief delay
+    ' Signal game over after death delay expires
     IF NOT Hero.isActive THEN
         IF DeathCounter = 0 THEN
             EraseSprites = _TRUE
@@ -1129,53 +1109,48 @@ FUNCTION EraseSprites%%
     END IF
 END FUNCTION
 
-' Draw all active objects that should be drawn on the screen
+' Draws all active sprites that are currently on-screen
 SUB DrawSprites
     DIM i AS INTEGER
 
-    ' Do explosions
+    ' Draw explosions
     FOR i = 0 TO MAX_EXPLOSIONS - 1
         IF Explosion(i).bDraw THEN
-            ' draw explosion
             _PUTIMAGE (Explosion(i).position.x, Explosion(i).position.y), ExplosionBitmap(Explosion(i).objSpec1)
         END IF
     NEXT
 
-    ' Draw hero missiles
+    ' Draw hero missiles with trails
     FOR i = 0 TO MAX_HERO_MISSILES - 1
         IF HeroMissile(i).bDraw THEN
-            ' Draw missile itself
             _PUTIMAGE (HeroMissile(i).position.x, HeroMissile(i).position.y), MissileBitmap
-            ' Draw missile trail. Remember we stored missile height in objspec2
             _PUTIMAGE (HeroMissile(i).position.x, HeroMissile(i).position.y + HeroMissile(i).objSpec2), MissileTrailUpBitmap
         END IF
     NEXT
 
-    ' Draw alien missiles
+    ' Draw alien missiles with trails
     FOR i = 0 TO MAX_ALIEN_MISSILES - 1
         IF AlienMissile(i).bDraw THEN
-            ' Draw missile itself
             _PUTIMAGE (AlienMissile(i).position.x, AlienMissile(i).position.y), MissileBitmap
-            ' Draw missile trail. Again objspec2 has the missile height
             _PUTIMAGE (AlienMissile(i).position.x, AlienMissile(i).position.y - AlienMissile(i).objSpec2), MissileTrailDnBitmap
         END IF
     NEXT
 
-    ' Do aliens
+    ' Draw aliens
     FOR i = 0 TO MAX_ALIENS - 1
         IF Alien(i).isActive AND Alien(i).bDraw THEN
             _PUTIMAGE (Alien(i).position.x, Alien(i).position.y), AlienBitmap(GunBlinkState)
         END IF
     NEXT
 
-    ' Do player
+    ' Draw player
     IF Hero.isActive AND Hero.bDraw THEN
         _PUTIMAGE (Hero.position.x, Hero.position.y), HeroBitmap(GunBlinkState)
     END IF
 
-    ' Blink the guns
+    ' Toggle gun blink state
     IF GunBlinkCounter = 0 THEN
-        GunBlinkState = 1 - GunBlinkState ' Flip it to other state
+        GunBlinkState = 1 - GunBlinkState
         GunBlinkCounter = GUN_BLINK_RATE
         AllowHeroFire = _TRUE
     ELSE
@@ -1185,10 +1160,9 @@ END SUB
 
 ' Performs all the program-wide initialization at start-up time
 SUB InitializeProgram
-    ' Initialize some stuff
     RANDOMIZE TIMER
 
-    ' Set the Window title
+    ' Set window title
     _TITLE APP_NAME
 
     ' Load high-score file
@@ -1200,19 +1174,18 @@ SUB InitializeProgram
     ' Initialize graphics
     SCREEN _NEWIMAGE(SCREEN_WIDTH, SCREEN_HEIGHT, 32)
 
-    ' We want all text rendering to be done over the hardware screen
+    ' Render text on the hardware screen
     _DISPLAYORDER _HARDWARE , _HARDWARE1 , _GLRENDER , _SOFTWARE
 
-    ' Set to fullscreen. We can also go to windowed mode using Alt+Enter
+    ' Fullscreen with square pixels (Alt+Enter for windowed)
     _FULLSCREEN _SQUAREPIXELS , _SMOOTH
 
-    ' We want transparent text rendering
+    ' Transparent text rendering
     _PRINTMODE _KEEPBACKGROUND
 
-    ' Hide the mouse pointer
     _MOUSEHIDE
 
-    ' We want the framebuffer to be updated when we want
+    ' Manual frame buffer updates
     _DISPLAY
 
     ' Load game assets
@@ -1227,58 +1200,41 @@ SUB FinalizeProgram
     ' Set framebuffer to autoupdate
     _AUTODISPLAY
 
-    ' Release sound resources (esp. MIDI here)
+    ' Release sound resources (including MIDI)
     FinalizeSound
 
     ' Save high scores
     SaveHighScores
 END SUB
 
-' Run the game!
+' Main game loop
 SUB RunGame
     DIM AS _BYTE UserInputUp, UserInputDown, UserInputLeft, UserInputRight, UserInputFire, GameOver
 
     InitializeHUD
     InitializeSprites
 
-    ' Initialize all counters, etc.
     Score = 0
     AlienGenCounter = ALIEN_GEN_RATE_BASE
     HeroShields = MAX_HERO_SHIELDS
 
-    ' Play the in-game music
     PlayMIDIFile "dat/sfx/mus/alienmain.mid"
 
-    ' Initialize some variables and enter main animation loop
     GameOver = _FALSE
 
-    ' Main game loop
     DO
-        ' Get user input
+        ' Read input and check for quit
         GameOver = GetInput(UserInputUp, UserInputDown, UserInputLeft, UserInputRight, UserInputFire)
 
-        ' Move sprites
         MoveSprites UserInputUp, UserInputDown, UserInputLeft, UserInputRight, UserInputFire
-
-        ' Check for collisions
         CheckCollisions
-
-        ' Erase any sprites if required
         GameOver = GameOver OR EraseSprites
 
-        ' Clear the screen
-        CLS , 0 ' black with no alpha
-
-        ' Scroll screen
+        ' Render frame
+        CLS , 0
         UpdateMap
-
-        ' Draw map (this will basically wipe the whole framebuffer so we do not clear anything)
         DrawMap
-
-        ' Draw sprites
         DrawSprites
-
-        ' Draw game HUD
         DrawHUD
 
         IF ShowFPS THEN _PRINTSTRING (0, 0), STR$(GetFPS) + " FPS"
@@ -1286,7 +1242,6 @@ SUB RunGame
         ' Page flip
         _DISPLAY
 
-        ' Only run the loop the number of times we want
         IF NOT NoLimit THEN _LIMIT UPDATES_PER_SECOND
     LOOP WHILE NOT GameOver
 
@@ -1295,17 +1250,15 @@ SUB RunGame
 END SUB
 
 '-----------------------------------------------------------------------------------------------------------------------
-' PROGRAM ENTRY POINT - Main program loop. Inits the program, draws intro screens and title pages,
-' and waits for user to hit keystroke to indicated what they want to do
+' Program entry point: initialize, display intro/title screens, and handle the main menu
 '-----------------------------------------------------------------------------------------------------------------------
 DIM DrawTitle AS _BYTE
 DIM k AS _UNSIGNED LONG
 
-' We want the title page to show the first time
+' Show the title page on first iteration
 DrawTitle = _TRUE
-' Initialize everything we need
 InitializeProgram
-' Display the into credits screen
+' Display intro credits
 DisplayIntroCredits
 ' Clear keyboard and mouse
 ClearInput

@@ -1,141 +1,101 @@
-# ALIEN ALLEY
+# Alien Alley
 
-This is a [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe) source port of the Alien Alley game that came with the book [PC Game Programming Explorer](http://www.droberts.com/pcgpex/pcgpex.htm) by Dave Roberts.
+A QB64-PE source port of the classic 1994 vertical-scrolling space shooter from *PC Game Programming Explorer* by Dave Roberts.
 
 ![Screenshot](screenshots/screenshot1.png)
 ![Screenshot](screenshots/screenshot2.png)
 ![Screenshot](screenshots/screenshot3.png)
 
-Actually, this is a source port of a source port! From [FreeBASIC](https://github.com/freebasic/fbc) to [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe).
+---
 
-My FreeBASIC port can be found [here](https://github.com/a740g/AlienAlleyQB64/tree/648fe7202157055c1658c12fbf476dcc5c445fcb).
+> **Lineage:** This is a source port of a source port — originally written in Turbo C (1994), later ported to FreeBASIC/Allegro, and now rewritten in pure QB64-PE BASIC with no external dependencies.
 
-The original [Turbo C](https://winworldpc.com/product/turbo-c/3x) code that came with the book can be found [here](http://www.droberts.com/pcgpex/source.zip). The update for the [Turbo C](https://winworldpc.com/product/turbo-c/3x) code can be found [here](http://www.droberts.com/pcgpex/update.zip).
+## Table of Contents
 
-## FEATURES
+- [About the Game](#about-the-game)
+- [Features](#features)
+- [Controls](#controls)
+- [Build Requirements](#build-requirements)
+- [Building & Running](#building--running)
+- [Credits](#credits)
+- [License](#license)
+- [Original Game Info](#original-game-info)
 
-- Works natively on Windows, Linux & macOS
-- There are no [Allegro](https://github.com/liballeg/allegro5) dependencies unlike the [FreeBASIC version](https://github.com/a740g/AlienAlleyQB64/tree/648fe7202157055c1658c12fbf476dcc5c445fcb)
-- Uses native [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases) graphics and sound functions
-- Runs in 32bpp graphics mode unlike the [FreeBASIC version](https://github.com/a740g/AlienAlleyQB64/tree/648fe7202157055c1658c12fbf476dcc5c445fcb) that ran at 8bpp
-- Runs at 640x400 (16:10 aspect ratio) fullscreen with square pixels
-- PCX loading is handled using PCX support in [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases)
-- PCX color key transparency is done on the BASIC side
-- MIDI playback is handled using MIDI support in [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases)
-- Alt + Enter puts the game in window mode
+## About the Game
 
-## USAGE
+You control a defending spaceship flying through the cosmos. Alien ships drift in from above, maneuvering side-to-side and firing plasma cannons at you. Fire back, dodge their missiles, and see how long you can survive.
 
-- Clone the repository to a directory of your choice
-- Open Terminal and change to the directory using an appropriate OS command
-- Run `git submodule update --init --recursive` to initialize, fetch and checkout git submodules
-- Open *AlienAlley.bas* in the QB64-PE IDE and press `F5` to compile and run
+- Up to **4 aliens** on screen at once
+- **Shield-based health** system (80 units, -5 per hit)
+- **Persistent high scores** (top 10, with name entry)
+- **Dual-layer starfield** with occasional planets
 
-## NOTES
+## Features
 
-The source port requires the latest version of [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases).
+- **Cross-platform** — runs natively on Windows, Linux & macOS
+- **No external dependencies** — uses only native QB64-PE graphics and sound (unlike the FreeBASIC/Allegro predecessor)
+- **32-bit color** at 640×400 fullscreen (16:10 aspect ratio, square pixels)
+- **MIDI music** with 3 looping tracks (intro, gameplay, high score fanfare)
+- **Stereo-panned** sound effects (position-aware)
+- **PCX sprite** loading with color-key transparency
+- **Toggleable FPS** counter and unlimited frame rate mode
+- **Alt+Enter** for windowed/fullscreen toggle
 
-## ASSETS
+## Controls
 
-Icon by [Good Stuff No Nonsense](https://iconarchive.com/artist/goodstuff-no-nonsense.html)
+| Input | Action |
+| --- | --- |
+| `W` / `↑` / mouse up | Move up |
+| `S` / `↓` / mouse down | Move down |
+| `A` / `←` / mouse left | Move left |
+| `D` / `→` / mouse right | Move right |
+| `Space` / `Ctrl` / `Alt` / click | Fire |
+| `K` / `M` / `J` / `Enter` | Start game |
+| `S` | View high scores |
+| `F1` | Toggle FPS display |
+| `F7` | Toggle unlimited frame rate |
+| `Esc` / `Q` | Quit |
 
-## ORIGINAL README
+## Build Requirements
 
-### ALIEN ALLEY
+- **[QB64-PE v4.7.0+](https://github.com/QB64-Phoenix-Edition/QB64pe/releases)** (Phoenix Edition)
+- Source file: `AlienAlley.bas`
 
-Release 1.0
-November 13, 1994
+## Building & Running
 
-Alien Alley is a vertically scrolling, fast action video game. The player controls a defending spaceship, flying though the cosmos.  Advancing alien spaceships make difficult foes as they advance on the lone defender, firing plasma cannons at will. How long can the defender hold out until he is finally overrun? Only you can say...
+### Using the QB64-PE IDE
 
-### INSTALLATION
+1. Clone the repository
+2. Open `AlienAlley.bas` in the QB64-PE IDE
+3. Press **F5** to compile and run
 
-Alien Alley may be installed by simply unzipping all the files in the archive to a single directory.  Alien Alley includes sound drivers for the Advanced Gravis UltraSound and Sound Blaster compatibles. To install the UltraSound drivers, run the SETGUS.BAT batchfile by typing "setgus" at the DOS prompt. To install the Sound Blaster compatible drivers, run SETSB.BAT by typing "setsb". The UltraSound drivers require that you run UltraMID before running the game itself.  If UltraMID is not run, the UltraSound drivers will not load. UltraMID can be run easily using the "e.exe" utility that comes with your UltraSound software.
+### From the Command Line
 
-### ABOUT ALIEN ALLEY
+```bash
+qb64pe -x -w -e AlienAlley.bas -o AlienAlley.exe
+```
 
-Alien Alley was created as an example for the book PC Game Programming Explorer, by Dave Roberts. Alien Alley demonstrates many of the game programming concepts and techniques described in PC Game Programming Explorer, including joystick, mouse, and keyboard programming, fast page flipping animation, VGA palette effects, music and sound, and a scrolling background.
+## Credits
 
-PC Game Programming Explorer includes all the source code used to create Alien Alley as well as the source code for many other projects developed in the book.
+| Role | Original (1994) | QB64-PE Port |
+| --- | --- | --- |
+| Programming | Dave Roberts | Samuel Gomes |
+| Graphics | Kevin Long (AIR Design) | — |
+| MIDI Music | James J. Black | — |
+| Sound FX | Dave Roberts | — |
 
-PC Game Programming Explorer, by Dave Roberts, is available for US$34.95 at a bookstore near you or directly from Coriolis Group Books.
+**QB64-PE port copyright:** © 2026 Samuel Gomes — [MIT License](LICENSE.txt)  
+**Original game copyright:** © 1994 David G. Roberts
 
-The Coriolis Group
-7339 East Acoma, Suite 7
-Scottsdale, AZ 85260 USA
-Phone: (800) 410-0192
-       (602) 483-0192
-FAX:   (602) 483-0193
+## License
 
-### PC Game Programming Explorer CONTENTS
+This QB64-PE source port is released under the [MIT License](LICENSE.txt).  
+The original game assets and code remain the property of their respective copyright holders.
 
-Part 1: Let the Games Begin
+## Original Game Info
 
-1. The Great Adventure
-2. Mastering the Keyboard
-3. Catching the Mouse
-4. Joystick Magic
+*Alien Alley* was created as a teaching example for the book **PC Game Programming Explorer** by Dave Roberts (Coriolis Group Books, November 1994). The original Turbo C source code demonstrated joystick, mouse, and keyboard programming, fast page flipping animation, VGA palette effects, music and sound, and a scrolling background.
 
-Part 2: The Graphics Adventure
+The original source code is archived online — see the [original Turbo C source](http://www.droberts.com/pcgpex/source.zip) and [update](http://www.droberts.com/pcgpex/update.zip).
 
-1. VGA Basics
-2. Bitmaps and Bitblts
-3. Adventures in Animation
-4. Color Your World
-
-Part 3: Into the Action
-
-1. Detecting Collisions
-2. Controlling Game Speed
-3. Creating Alien Alley
-
-Part 4: Advanced Techniques
-
-1. Audio Immersion
-2. Scrolling Along
-
-Game Programming Resources
-
-### CREDITS
-
-Programming: Dave Roberts  
-Graphic Art: Kevin Long  
-MIDI Music : James Black  
-Sound FX   : Dave Roberts  
-
-The artists involved with this project can be contacted at:
-
-AIR Design - Kevin Long  
-3354 N.E. 83rd Ave  
-Portland, OR 97220 USA  
-Voice Mail: 800-223-3737x594  
-Email: <air@netcom.com>  
-
-J. Black  
-PO Box 11740  
-Denver, CO 80211-0740 USA  
-Email: <jblack@csn.org>  
-
-Dave Roberts may be reached at The Coriolis Group.
-
-### Sound Drivers
-
-To keep the size of this archive down, Alien Alley is distributed with just two audio drivers.  Alien Alley uses audio drivers from The Audio Solution's DigPak and MidPak. If you own something other than an UltraSound or a Sound Blaster, chances are that DigPak/MidPak drivers exist for your sound card. To get all the audio drivers, call the BBS at 314-939-0200 and look for the DigPak/MidPak developers kit (DMKIT.ZIP) in the main file library.
-
-DMKIT.ZIP also includes all the files necessary to develop an application around DigPak/MidPak. If you are a game developer, take a look at DIGPKAPI.DOC and MIDPKAPI.DOC.
-
-### COPYRIGHTS
-
-Alien Alley, Copyright 1994, David G. Roberts, All Rights Reserved
-
-Original music, Copyright 1994, James J. Black, All Rights Reserved
-
-Original artwork, Copyright 1994, Kevin Long
-
-General MIDI patches (c) 1994 The Fat Man and K. Weston Phelan
-
-### REDISTRIBUTION
-
-Alien Alley may be, and is encouraged to be, redistributed throughout the world.  All files in the original archive MUST remain intact, however.  No files may be altered or removed. Under no circumstances may this program be sold for a fee.
-
-In summary, make as many copies of this archive as you want as long as you: (1) keep all the files together, and (2) don't sell it.
+> **Icon credit:** [Good Stuff No Nonsense](https://www.iconarchive.com/artist/goodstuff-no-nonsense.html) via IconArchive

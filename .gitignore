@@ -20,6 +20,7 @@
 .vscode/
 .fake/
 .devin/
+.claude/
 .idea/
 .cache/
 .DS_Store
