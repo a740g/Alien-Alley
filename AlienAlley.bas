@@ -11,10 +11,6 @@
 '
 '-----------------------------------------------------------------------------------------------------------------------
 
-$IF VERSION < 4.6 THEN
-    $ERROR 'This requires the latest version of QB64-PE from https://github.com/QB64-Phoenix-Edition/QB64pe/releases/latest'
-$END IF
-
 '$STATIC
 _DEFINE A-Z AS LONG
 OPTION _EXPLICIT
